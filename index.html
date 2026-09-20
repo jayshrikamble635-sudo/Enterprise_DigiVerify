@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DigiVerify | Enterprise Digital Identity Platform</title>
+
+    <link rel="stylesheet" href="css/style.css">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+</head>
+<script>
+// यह फंक्शन बटन दबाते ही डेटाबेस को मैसेज भेजेगा
+async function changeStatus(docId, actionName) {
+    let response = await fetch('http://localhost:3000/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: docId, status: actionName })
+    });
+    
+    let result = await response.json();
+    alert(result.message); // स्क्रीन पर मैसेज दिखेगा "Success"
+    location.reload();     // पेज अपने आप रीफ्रेश हो जाएगा
+}
+</script>
+
+
+<body>
+
+<!-- ================= NAVBAR ================= -->
+
+<header class="navbar">
+
+    <div class="logo">
+        <i class="fa-solid fa-shield-halved"></i>
+        <h2>DigiVerify</h2>
+    </div>
+
+    <nav class="menu">
+        <a href="#">Home</a>
+        <a href="#features">Features</a>
+        <a href="#services">Services</a>
+        <a href="#about">About</a>
+        <a href="#contact">Contact</a>
+    </nav>
+
+    <div class="buttons">
+        <a href="user/login.html" class="btn login">User Login</a>
+        <a href="admin/login.html" class="btn admin">Admin</a>
+    </div>
+
+</header>
+
+<!-- ================= HERO ================= -->
+
+<section class="hero">
+
+    <div class="hero-left">
+
+        <h4>AI Powered Verification</h4>
+
+        <h1>
+            Enterprise Digital Identity <br>
+            & Document Verification
+        </h1>
+
+        <p>
+            Secure Digital Identity Management,
+            AI Based Verification,
+            Face Authentication,
+            OCR Verification,
+            Enterprise Security.
+        </p>
+
+        <div class="hero-btn">
+
+            <a href="user/login.html" class="primary">
+                Get Started
+            </a>
+
+            <a href="#features" class="secondary">
+                Learn More
+            </a>
+
+        </div>
+
+    </div>
+
+    <div class="hero-right">
+
+        <img src="images/hero.png" alt="Hero Image">
+
+    </div>
+
+</section>
+
+<!-- ================= FEATURES ================= -->
+
+<section id="features" class="features">
+
+<h2>Platform Features</h2>
+
+<div class="feature-box">
+
+<div class="card">
+<i class="fa-solid fa-id-card"></i>
+<h3>Identity Verification</h3>
+<p>Verify customer identity instantly using secure AI technology.</p>
+</div>
+
+<div class="card">
+<i class="fa-solid fa-file-shield"></i>
+<h3>Document Verification</h3>
+<p>Automatic OCR based document validation.</p>
+</div>
+
+<div class="card">
+<i class="fa-solid fa-brain"></i>
+<h3>AI Verification</h3>
+<p>Artificial Intelligence detects fake documents.</p>
+</div>
+
+<div class="card">
+<i class="fa-solid fa-lock"></i>
+<h3>Enterprise Security</h3>
+<p>Military grade encryption with cloud security.</p>
+</div>
+
+<div class="card">
+<i class="fa-solid fa-database"></i>
+<h3>Secure Database</h3>
+<p>Protected enterprise data storage.</p>
+</div>
+
+<div class="card">
+<i class="fa-solid fa-chart-line"></i>
+<h3>Analytics</h3>
+<p>Advanced dashboard and reporting.</p>
+</div>
+
+</div>
+
+</section>
+
+<!-- ================= SERVICES ================= -->
+
+<section id="services" class="services">
+
+<h2>Our Services</h2>
+
+<div class="service-grid">
+
+<div class="service">
+<h3>Identity Management</h3>
+<p>Enterprise identity lifecycle management.</p>
+</div>
+
+<div class="service">
+<h3>Document Scanning</h3>
+<p>Fast OCR document verification.</p>
+</div>
+
+<div class="service">
+<h3>Face Authentication</h3>
+<p>AI powered biometric authentication.</p>
+</div>
+
+</div>
+
+</section>
+
+<!-- ================= ABOUT ================= -->
+
+<section id="about" class="about">
+
+<h2>About DigiVerify</h2>
+
+<p>
+
+DigiVerify is an enterprise digital identity verification platform that
+helps organizations securely verify users, documents, identities and
+provide AI powered authentication solutions.
+
+</p>
+
+</section>
+
+<!-- ================= CONTACT ================= -->
+
+<section id="contact" class="contact">
+
+<h2>Contact Us</h2>
+
+<p>Email : support@digiverify.com</p>
+
+<p>Phone : +91 9876543210</p>
+
+<p>Location : India</p>
+
+</section>
+
+<!-- ================= FOOTER ================= -->
+
+<footer>
+
+<p>
+
+© 2026 DigiVerify |
+Enterprise Identity Verification Platform
+
+</p>
+
+</footer>
+
+</body>
+
+</html>
