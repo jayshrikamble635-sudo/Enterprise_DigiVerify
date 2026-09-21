@@ -1,10 +1,10 @@
 <?php
 
-// अपने लाइव या क्लाउड डेटाबेस की क्रेडेंशियल्स यहाँ दर्ज करें
-$host = "YOUR_LIVE_DATABASE_HOST"; // उदा. ://render.com या clever-cloud Host
-$user = "YOUR_LIVE_DATABASE_USER";
-$password = "YOUR_LIVE_DATABASE_PASSWORD";
-$database = "YOUR_LIVE_DATABASE_NAME";
+// Clever Cloud लाइव डेटाबेस क्रेडेंशियल्स
+$host = "://clever-cloud.com";
+$user = "bnljgn27equjadrmm6w7";
+$password = "यहाँ_अपना_CLEVER_CLOUD_PASSWORD_पेस्ट_करें"; // <-- यहाँ अपना असली पासवर्ड डालें
+$database = "bnljgn27equjadrmm6w7";
 
 $conn = new mysqli($host, $user, $password, $database);
 
