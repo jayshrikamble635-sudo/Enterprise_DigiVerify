@@ -3,18 +3,23 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "digiverify_db";
+// Clever Cloud लाइव डेटाबेस क्रेडेंशियल्स - बिना किसी :// के एकदम सटीक सेटिंग्स
+$servername = "://clever-cloud.com";
+$username = "usmmcxltshqjsde2";
+$password = "4yIROXJGxupdTdzB6dZm";
+$dbname = "bnljgn27equjadrmm6w7";
+$port = 3306;
 
 $message = "";
 $message_class = "";
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['document_file'])) {
-    $conn = @new mysqli($servername, $username, $password, $dbname);
+    // सीधे लाइव डेटाबेस से सुरक्षित कनेक्शन
+    $conn = @new mysqli($servername, $username, $password, $dbname, $port);
     
     if ($conn && !$conn->connect_error) {
+        $conn->set_charset("utf8mb4");
+
         // uploads फ़ोल्डर बाहर (parent directory) में होगा
         $target_dir = dirname(__DIR__) . "/uploads/";
         
@@ -65,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['document_file'])) {
             }
         }
     } else {
-        $message = "ERROR: Database connection offline.";
+        $message = "ERROR: Database connection offline. " . ($conn ? $conn->connect_error : "");
         $message_class = "error-msg";
     }
 }
@@ -79,7 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['document_file'])) {
     <link href="https://googleapis.com" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Inter', sans-serif; background: #08111f; color: #fff; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        body { font-family: 'Inter', sans-serif; background: #08111f; color: #fff; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 40px 0; }
         .upload-card { background: linear-gradient(145deg, #0f172a, #0b1324); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 24px; padding: 40px; max-width: 500px; width: 90%; box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7); text-align: center; }
         h1 { font-size: 24px; font-weight: 800; margin-bottom: 10px; }
         p { color: #9fb3d6; font-size: 14px; margin-bottom: 30px; line-height: 1.5; }
@@ -87,6 +92,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['document_file'])) {
         .file-box input[type="file"] { position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
         .btn-submit { background: linear-gradient(135deg, #2563eb, #9333ea); color: #fff; border: none; padding: 14px 28px; border-radius: 12px; font-weight: 700; font-size: 15px; width: 100%; cursor: pointer; box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3); transition: 0.3s; }
         .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 6px 25px rgba(147, 51, 234, 0.4); }
+        .btn-back { background: transparent; color: #38bdf8; border: 2px solid rgba(56, 189, 248, 0.4); padding: 14px 28px; border-radius: 12px; font-weight: 700; font-size: 15px; width: 100%; cursor: pointer; transition: 0.3s; }
+        .btn-back:hover { background: rgba(56, 189, 248, 0.1); border-color: #38bdf8; transform: translateY(-2px); }
         .error-msg { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); padding: 15px; border-radius: 8px; color: #fca5a5; font-size: 13px; margin-bottom: 20px; text-align: left; font-family: monospace; line-height: 1.5; }
     </style>
 </head>
@@ -106,7 +113,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['document_file'])) {
                 <div style="font-size: 12px; color: #64748b; margin-top: 5px;">Supports: JPG, JPEG, PNG</div>
                 <input type="file" name="document_file" required>
             </div>
-            <button type="submit" class="btn-submit">Upload & Verify Live</button>
+            
+            <div style="display: flex; gap: 15px; margin-top: 20px; width: 100%;">
+                <!-- Back बटन -->
+                <button type="button" onclick="history.back()" class="btn-back">
+                    Back
+                </button>
+                
+                <!-- Upload बटन -->
+                <button type="submit" class="btn-submit">
+                    Upload & Verify Live
+                </button>
+            </div>
         </form>
     </div>
 
