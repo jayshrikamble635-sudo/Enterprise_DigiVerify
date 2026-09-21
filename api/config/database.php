@@ -13,7 +13,7 @@ if ($conn->connect_error) {
     die("Database Connection Failed : " . $conn->connect_error);
 }
 
-// यह कनेक्शन को लाइव सर्वर के लिए एकदम पक्का (Strict) कर देगा
+// यह कनेक्शन को लाइव सर्ver के लिए एकदम पक्का (Strict) कर देगा
 $conn->set_charset("utf8mb4");
 
 ?>
