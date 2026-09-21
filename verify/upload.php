@@ -3,24 +3,24 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-// लाइव क्रेडेंशियल्स - अगर सर्वर या वेरिएबल्स में गलती से :// आ भी जाए, तो यह कोड उसे अपने आप साफ़ कर देगा!
-$raw_host = "://clever-cloud.com";
-$servername = str_replace(['http://', 'https://', 'mysql://', '://'], '', trim($raw_host));
-
+// क्रेडेंशियल्स बिना किसी रिस्क के
+$servername = "://clever-cloud.com";
 $username = "usmmcxltshqjsde2";
 $password = "4yIROXJGxupdTdzB6dZm";
 $dbname = "bnljgn27equjadrmm6w7";
+$port = 3306; // <-- यह पोर्ट जोड़ना ज़रूरी है ताकि Clever Cloud कनेक्शन स्वीकार करे
 
 $message = "";
 $message_class = "";
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['document_file'])) {
     
-    // बिना किसी रिस्क के साफ़ होस्टनेम से सीधे कनेक्ट करना
-    $conn = @new mysqli($servername, $username, $password, $dbname);
+    // अब कनेक्शन में पोर्ट नंबर भी जबरन पास कर दिया गया है
+    $conn = @new mysqli($servername, $username, $password, $dbname, $port);
     
     if ($conn && !$conn->connect_error) {
         $conn->set_charset("utf8mb4");
+
 
         // uploads फ़ोल्डर बाहर (parent directory) में है
         $target_dir = dirname(__DIR__) . "/uploads/";
