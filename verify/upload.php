@@ -8,13 +8,15 @@ $message_class = "";
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['document_file'])) {
     
+       // 🔥 Clever Cloud MySQL Live Connection (CORRECTED)
     $conn = @new mysqli(
-    "://clever-cloud.com", 
-    "usmmcxltshqjsde2", 
-    "4yIROXJGxupdTzB6dZm", 
-    "bnljgn27equjadrmm6w7", 
-    3306
-);
+        "://clever-cloud.com", 
+        "usmmcxltshqjsde2", 
+        "4yIROXJGxupdTzB6dZm", 
+        "bnljgn27equjadrmm6w7", 
+        3306
+    );
+
 
     
     if ($conn && !$conn->connect_error) {
