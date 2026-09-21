@@ -8,8 +8,7 @@ $message_class = "";
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['document_file'])) {
     
-    // 🔥 सीधे बिना किसी वेरिएबल या सिंबल की गलती के कनेक्शन फ़ंक्शन का उपयोग
-    // 🔥 Clever Cloud MySQL Live Connection
+       // 🔥 Clever Cloud MySQL Live Connection
     $conn = @new mysqli(
         "://clever-cloud.com", 
         "usmmcxltshqjsde2", 
@@ -17,6 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['document_file'])) {
         "bnljgn27equjadrmm6w7", 
         3306
     );
+
 
     
     if ($conn && !$conn->connect_error) {
