@@ -8,8 +8,8 @@ $message_class = "";
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['document_file'])) {
     
-    // 🔥 सीधे कनेक्शन कंस्ट्रक्टर में ही सटीक क्रेडेंशियल्स इंजेक्ट कर दिए हैं
-    // यह वेरिएबल्स के किसी भी पुराने कैशिंग एरर को पूरी तरह बाईपास कर देगा
+    // 🔥 यहाँ सीधे बिना किसी वेरिएबल के क्रेडेंशियल्स को साफ टेक्स्ट में डाल दिया है।
+    // यह पुराना कोई भी कैश (Cache) या गलत सिंबल एरर को पूरी तरह बाईपास कर देगा।
     $conn = @new mysqli(
         "://clever-cloud.com", 
         "usmmcxltshqjsde2", 
@@ -21,7 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['document_file'])) {
     if ($conn && !$conn->connect_error) {
         $conn->set_charset("utf8mb4");
 
-        // uploads फ़ोल्डर बाहर (parent directory) में होगा
+        // uploads फ़ोल्डर बाहर (parent directory) में है
         $target_dir = dirname(__DIR__) . "/uploads/";
         
         if (!file_exists($target_dir)) {
