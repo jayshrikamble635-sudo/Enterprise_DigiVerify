@@ -8,7 +8,7 @@ $message_class = "";
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['document_file'])) {
     
-       // 🔥 Clever Cloud MySQL Live Connection
+    // 🔥 Clever Cloud MySQL Live Connection
     $conn = @new mysqli(
         "://clever-cloud.com", 
         "usmmcxltshqjsde2", 
@@ -16,8 +16,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['document_file'])) {
         "bnljgn27equjadrmm6w7", 
         3306
     );
-
-
     
     if ($conn && !$conn->connect_error) {
         $conn->set_charset("utf8mb4");
