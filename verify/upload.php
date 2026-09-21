@@ -3,8 +3,10 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-// साफ़ और सटीक लाइव क्रेडेंशियल्स (बिना किसी :// या एक्स्ट्रा सिंबल के)
-$servername = "://clever-cloud.com";
+// लाइव क्रेडेंशियल्स - अगर सर्वर या वेरिएबल्स में गलती से :// आ भी जाए, तो यह कोड उसे अपने आप साफ़ कर देगा!
+$raw_host = "://clever-cloud.com";
+$servername = str_replace(['http://', 'https://', 'mysql://', '://'], '', trim($raw_host));
+
 $username = "usmmcxltshqjsde2";
 $password = "4yIROXJGxupdTdzB6dZm";
 $dbname = "bnljgn27equjadrmm6w7";
@@ -13,12 +15,15 @@ $message = "";
 $message_class = "";
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['document_file'])) {
-    // बिना किसी रिस्क के सीधे लाइव डेटाबेस से कनेक्ट करना
+    
+    // बिना किसी रिस्क के साफ़ होस्टनेम से सीधे कनेक्ट करना
     $conn = @new mysqli($servername, $username, $password, $dbname);
     
     if ($conn && !$conn->connect_error) {
         $conn->set_charset("utf8mb4");
 
+        // uploads फ़ोल्डर बाहर (parent directory) में है
+        $target_dir = dirname(__DIR__) . "/uploads/";
         
         if (!file_exists($target_dir)) {
             mkdir($target_dir, 0777, true);
@@ -31,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['document_file'])) {
         $file_mime = $_FILES["document_file"]["type"];
         $allowed_mimes = ['image/jpeg', 'image/jpg', 'image/png'];
 
-        // 🔥 सख्त बाइनरी चेक: यह सुनिश्चित करेगा कि टेक्स्ट/एक्सेल फ़ाइल सीधे रिजेक्ट हो जाए
+        // सख्त बाइनरी चेक: यह सुनिश्चित करेगा कि टेक्स्ट/एक्सेल फ़ाइल सीधे रिजेक्ट हो जाए
         $is_graphic_image = false;
         if (in_array($file_mime, $allowed_mimes)) {
             $img_test = @imagecreatefromstring(file_get_contents($_FILES["document_file"]["tmp_name"]));
@@ -58,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['document_file'])) {
                 $conn->query($sql);
                 $conn->close();
 
-                // सीधे verification_result.php पर रीडायरेक्ट करें (दोनों एक ही फ़ोल्डर में हैं)
+                // सीधे verification_result.php पर रीडायरेक्ट करें
                 header("Location: verification_result.php?id=98");
                 exit();
             } else {
@@ -67,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['document_file'])) {
             }
         }
     } else {
-        $message = "ERROR: Database connection offline.";
+        $message = "ERROR: Database connection offline. " . ($conn ? $conn->connect_error : "");
         $message_class = "error-msg";
     }
 }
@@ -89,6 +94,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['document_file'])) {
         .file-box input[type="file"] { position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
         .btn-submit { background: linear-gradient(135deg, #2563eb, #9333ea); color: #fff; border: none; padding: 14px 28px; border-radius: 12px; font-weight: 700; font-size: 15px; width: 100%; cursor: pointer; box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3); transition: 0.3s; }
         .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 6px 25px rgba(147, 51, 234, 0.4); }
+        .btn-back { background: transparent; color: #38bdf8; border: 2px solid rgba(56, 189, 248, 0.4); padding: 14px 28px; border-radius: 12px; font-weight: 700; font-size: 15px; width: 100%; cursor: pointer; transition: 0.3s; }
+        .btn-back:hover { background: rgba(56, 189, 248, 0.1); border-color: #38bdf8; transform: translateY(-2px); }
         .error-msg { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); padding: 15px; border-radius: 8px; color: #fca5a5; font-size: 13px; margin-bottom: 20px; text-align: left; font-family: monospace; line-height: 1.5; }
     </style>
 </head>
@@ -108,21 +115,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['document_file'])) {
                 <div style="font-size: 12px; color: #64748b; margin-top: 5px;">Supports: JPG, JPEG, PNG</div>
                 <input type="file" name="document_file" required>
             </div>
-           <!-- Yeh naya block add karein -->
-<div style="display: flex; gap: 15px; margin-top: 20px; width: 100%;">
-    
-    <!-- Naya Back Button -->
-    <button type="button" onclick="history.back()" style="flex: 1; padding: 14px; border: 2px solid #3b82f6; background: transparent; color: #3b82f6; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 14px;">
-        Back
-    </button>
-    
-    <!-- Aapka Asli Upload Button (Gradient Style) -->
-    <button type="submit" style="flex: 1; padding: 14px; border: none; background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 14px;">
-        Upload & Verify Live
-    </button>
 
-</div>
-
+            <div style="display: flex; gap: 15px; width: 100%;">
+                <button type="button" onclick="history.back()" class="btn-back">
+                    Back
+                </button>
+                <button type="submit" class="btn-submit">
+                    Upload & Verify Live
+                </button>
+            </div>
         </form>
     </div>
 
