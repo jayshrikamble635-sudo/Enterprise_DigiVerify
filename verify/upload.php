@@ -3,20 +3,19 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-// लाइव क्रेडेंशियल्स - बिना किसी :// के एकदम साफ़ होस्टनेम और पोर्ट 3306
-$servername = "://clever-cloud.com";
-$username = "usmmcxltshqjsde2";
-$password = "4yIROXJGxupdTdzB6dZm";
-$dbname = "bnljgn27equjadrmm6w7";
-$port = 3306;
-
 $message = "";
 $message_class = "";
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['document_file'])) {
     
-    // सुरक्षित और डायरेक्ट लाइव कनेक्शन निर्माण
-    $conn = @new mysqli($servername, $username, $password, $dbname, $port);
+    // 🔥 यहाँ सीधे कंस्ट्रक्टर में ही साफ़-साफ़ वैल्यूज़ डाल दी हैं ताकि वेरिएबल्स का कैशिंग एरर पूरी तरह बाईपास हो जाए
+    $conn = @new mysqli(
+        "://clever-cloud.com", 
+        "usmmcxltshqjsde2", 
+        "4yIROXJGxupdTdzB6dZm", 
+        "bnljgn27equjadrmm6w7", 
+        3306
+    );
     
     if ($conn && !$conn->connect_error) {
         $conn->set_charset("utf8mb4");
