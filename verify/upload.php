@@ -3,17 +3,22 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-// केंद्रीय डेटाबेस कॉन्फ़िगरेशन फ़ाइल को शामिल करें (api/config/database.php)
-// यह सुनिश्चित करेगा कि लोकल सर्वर और Render दोनों पर सही डेटाबेस क्रेडेंशियल्स यूज़ हों।
-require_once dirname(__DIR__) . "/api/config/database.php";
-
 $message = "";
 $message_class = "";
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['document_file'])) {
     
-    // $conn वेरिएबल api/config/database.php फ़ाइल से स्वतः मिल जाएगा
+    // यहाँ सीधे Clever Cloud लाइव डेटाबेस क्रेडेंशियल्स डाल दिए हैं ताकि कोई एरर न आए
+    $host = "://clever-cloud.com";
+    $user = "usmmcxltshqjsde2";
+    $password = "4yIROXJGxupdTdzB6dZm";
+    $database = "bnljgn27equjadrmm6w7";
+
+    $conn = @new mysqli($host, $user, $password, $database);
+    
     if ($conn && !$conn->connect_error) {
+        $conn->set_charset("utf8mb4");
+
         // uploads फ़ोल्डर बाहर (parent directory) में है
         $target_dir = dirname(__DIR__) . "/uploads/";
         
@@ -64,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['document_file'])) {
             }
         }
     } else {
-        $message = "ERROR: Database connection offline.";
+        $message = "ERROR: Database connection offline. " . ($conn ? $conn->connect_error : "");
         $message_class = "error-msg";
     }
 }
