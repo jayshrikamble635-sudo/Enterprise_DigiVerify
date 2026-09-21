@@ -1,23 +1,16 @@
 <?php
 
-// Changed "localhost" to "127.0.0.1" for instant query routing and to fix XAMPP lag
-$host = "127.0.0.1";
-$user = "root";
-$pass = "";
-$db   = "digiverify";
+// Clever Cloud लाइव डेटाबेस क्रेडेंशियल्स
+$host = "://clever-cloud.com";
+$user = "usmmcxltshqjsde2";
+$pass = "4yIROXJGxupdTdzB6dZm";
+$db   = "bnljgn27equjadrmm6w7";
 
-
-$conn = mysqli_connect($host,$user,$pass,$db);
-
+// MySQLi कनेक्शन बनाना
+$conn = mysqli_connect($host, $user, $pass, $db);
 
 if(!$conn){
-
     die("Database Connection Failed : " . mysqli_connect_error());
-
 }
-
-
-// Set character encoding
-mysqli_set_charset($conn,"utf8");
 
 ?>
