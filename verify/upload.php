@@ -3,17 +3,16 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "digiverify_db";
+// केंद्रीय डेटाबेस कॉन्फ़िगरेशन फ़ाइल को शामिल करें (api/config/database.php)
+// यह सुनिश्चित करेगा कि लोकल सर्वर और Render दोनों पर सही डेटाबेस क्रेडेंशियल्स यूज़ हों।
+require_once dirname(__DIR__) . "/api/config/database.php";
 
 $message = "";
 $message_class = "";
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['document_file'])) {
-    $conn = @new mysqli($servername, $username, $password, $dbname);
     
+    // $conn वेरिएबल api/config/database.php फ़ाइल से स्वतः मिल जाएगा
     if ($conn && !$conn->connect_error) {
         // uploads फ़ोल्डर बाहर (parent directory) में है
         $target_dir = dirname(__DIR__) . "/uploads/";
@@ -106,21 +105,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['document_file'])) {
                 <div style="font-size: 12px; color: #64748b; margin-top: 5px;">Supports: JPG, JPEG, PNG</div>
                 <input type="file" name="document_file" required>
             </div>
-           <!-- Yeh naya block add karein -->
-<div style="display: flex; gap: 15px; margin-top: 20px; width: 100%;">
-    
-    <!-- Naya Back Button -->
-    <button type="button" onclick="history.back()" style="flex: 1; padding: 14px; border: 2px solid #3b82f6; background: transparent; color: #3b82f6; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 14px;">
-        Back
-    </button>
-    
-    <!-- Aapka Asli Upload Button (Gradient Style) -->
-    <button type="submit" style="flex: 1; padding: 14px; border: none; background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 14px;">
-        Upload & Verify Live
-    </button>
 
-</div>
-
+            <div style="display: flex; gap: 15px; margin-top: 20px; width: 100%;">
+                <!-- Back Button -->
+                <button type="button" onclick="history.back()" style="flex: 1; padding: 14px; border: 2px solid #3b82f6; background: transparent; color: #3b82f6; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 14px;">
+                    Back
+                </button>
+                
+                <!-- Upload Button -->
+                <button type="submit" class="btn-submit" style="flex: 1; padding: 14px; border: none; background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 14px;">
+                    Upload & Verify Live
+                </button>
+            </div>
         </form>
     </div>
 
