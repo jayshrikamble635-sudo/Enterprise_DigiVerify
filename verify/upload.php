@@ -3,13 +3,16 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "digiverify_db";
+// Render के Environment Variables को पढ़ने के लिए सही तरीका
+$servername = getenv('DB_HOST') ?: "localhost";
+$username = getenv('DB_USER') ?: "root";
+$password = getenv('DB_PASS') ?: "";
+$dbname = getenv('DB_NAME') ?: "digiverify_db";
 
 $message = "";
 $message_class = "";
+// ... बाकी का नीचे का कोड बिल्कुल वैसा ही रहने दें ...
+
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['document_file'])) {
     $conn = @new mysqli($servername, $username, $password, $dbname);
