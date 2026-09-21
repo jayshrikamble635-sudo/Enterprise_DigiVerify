@@ -1,12 +1,11 @@
 <?php
 
-// Clever Cloud लाइव डेटाबेस क्रेडेंशियल्स (बिना किसी स्पेस के पूरा एड्रेस)
-$host = "://clever-cloud.com";
-$user = "usmmcxltshqjsde2";
-$password = "4yIROXJGxupdTdzB6dZm";
-$database = "bnljgn27equjadrmm6w7";
+// Render Dashboard से सीधे लाइव डेटाबेस क्रेडेंशियल्स उठाना
+$host = getenv('DB_HOST') ?: "://clever-cloud.com";
+$user = getenv('DB_USER') ?: "usmmcxltshqjsde2";
+$password = getenv('DB_PASS') ?: "4yIROXJGxupdTdzB6dZm";
+$database = getenv('DB_NAME') ?: "bnljgn27equjadrmm6w7";
 
-// कनेक्शन बनाते समय एरर हैंडलिंग को बेहतर करना
 $conn = @new mysqli($host, $user, $password, $database);
 
 if ($conn->connect_error) {
