@@ -9,13 +9,14 @@ $message_class = "";
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['document_file'])) {
     
     // 🔥 सीधे बिना किसी वेरिएबल या सिंबल की गलती के कनेक्शन फ़ंक्शन का उपयोग
-  $conn = @new mysqli(
-    "आपका-डेटाबेस-होस्ट-यहाँ-डालें.clever-cloud.com", // 💡 यहाँ अपना पूरा Clever Cloud Host एड्रेस लिखें
-    "usmmcxltshqjsde2", 
-    "4yIROXJGxupdTdzB6dZm", 
-    "bnljgn27equjadrmm6w7", 
-    3306
-);
+    // 🔥 Clever Cloud MySQL Live Connection
+    $conn = @new mysqli(
+        "://clever-cloud.com", 
+        "usmmcxltshqjsde2", 
+        "4yIROXJGxupdTzB6dZm", 
+        "bnljgn27equjadrmm6w7", 
+        3306
+    );
 
     
     if ($conn && !$conn->connect_error) {
