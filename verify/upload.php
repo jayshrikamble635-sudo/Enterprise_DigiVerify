@@ -8,8 +8,7 @@ $message_class = "";
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['document_file'])) {
     
-    // 🔥 यहाँ बिना किसी वेरिएबल या गलती के सीधे सटीक स्ट्रिंग क्रेडेंशियल्स पास किए हैं।
-    // इसमें शुरुआत में कोई '://' नहीं है, जिससे यह लाइव डेटाबेस को तुरंत ढूंढ लेगा।
+    // 🔥 यहाँ बिना किसी वेरिएबल या सिंबल की गलती के सीधे बिल्कुल साफ़ होस्टनेम डाल दिया है
     $conn = @new mysqli(
         "://clever-cloud.com", 
         "usmmcxltshqjsde2", 
@@ -20,6 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['document_file'])) {
     
     if ($conn && !$conn->connect_error) {
         $conn->set_charset("utf8mb4");
+
 
         // uploads फ़ोल्डर का रास्ता
         $target_dir = dirname(__DIR__) . "/uploads/";
