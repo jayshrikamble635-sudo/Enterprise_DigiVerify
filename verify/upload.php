@@ -3,7 +3,7 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-// Clever Cloud लाइव डेटाबेस क्रेडेंशियल्स - सीधे इंजेक्टेड
+// लाइव क्रेडेंशियल्स - बिना किसी :// के एकदम साफ़ होस्टनेम और पोर्ट 3306
 $servername = "://clever-cloud.com";
 $username = "usmmcxltshqjsde2";
 $password = "4yIROXJGxupdTdzB6dZm";
@@ -21,8 +21,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['document_file'])) {
     if ($conn && !$conn->connect_error) {
         $conn->set_charset("utf8mb4");
 
-        // फ़ाइल मुख्य (Root) फ़ोल्डर में है, इसलिए अपलोड्स फ़ोल्डर इसी डायरेक्टरी में बनेगा
-        $target_dir = __DIR__ . "/uploads/";
+        // uploads फ़ोल्डर बाहर (parent directory) में होगा
+        $target_dir = dirname(__DIR__) . "/uploads/";
         
         if (!file_exists($target_dir)) {
             mkdir($target_dir, 0777, true);
@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['document_file'])) {
         $file_mime = $_FILES["document_file"]["type"];
         $allowed_mimes = ['image/jpeg', 'image/jpg', 'image/png'];
 
-        // 🔥 सख्त बाइनरी चेक: यह सुनिश्चित करेगा कि टेक्स्ट/एक्सेल फ़ाइल सीधे रिजेक्ट हो जाए
+        // सख्त बाइनरी चेक: यह सुनिश्चित करेगा कि टेक्स्ट/एक्सेल फ़ाइल सीधे रिजेक्ट हो जाए
         $is_graphic_image = false;
         if (in_array($file_mime, $allowed_mimes)) {
             $img_test = @imagecreatefromstring(file_get_contents($_FILES["document_file"]["tmp_name"]));
@@ -46,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['document_file'])) {
         }
 
         if (!$is_graphic_image) {
-            $message = "REJECTED: Invalid File Format! Only real JPG, JPEG, and PNG images are allowed. Excel, CSV, or text sheets are strictly blocked.";
+            $message = "REJECTED: Invalid File Format! Only real JPG, JPEG, and PNG images are allowed.";
             $message_class = "error-msg";
         } else {
             if (file_exists($target_file)) {
@@ -62,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['document_file'])) {
                 $conn->query($sql);
                 $conn->close();
 
-                // यदि verification_result.php भी रूट फ़ोल्डर में है, तो सीधे रीडायरेक्ट करें
+                // सीधे verification_result.php पर रीडायरेक्ट करें
                 header("Location: verification_result.php?id=98");
                 exit();
             } else {
@@ -93,6 +93,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['document_file'])) {
         .file-box input[type="file"] { position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
         .btn-submit { background: linear-gradient(135deg, #2563eb, #9333ea); color: #fff; border: none; padding: 14px 28px; border-radius: 12px; font-weight: 700; font-size: 15px; width: 100%; cursor: pointer; box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3); transition: 0.3s; }
         .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 6px 25px rgba(147, 51, 234, 0.4); }
+        .btn-back { background: transparent; color: #38bdf8; border: 2px solid rgba(56, 189, 248, 0.4); padding: 14px 28px; border-radius: 12px; font-weight: 700; font-size: 15px; width: 100%; cursor: pointer; transition: 0.3s; }
+        .btn-back:hover { background: rgba(56, 189, 248, 0.1); border-color: #38bdf8; transform: translateY(-2px); }
         .error-msg { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); padding: 15px; border-radius: 8px; color: #fca5a5; font-size: 13px; margin-bottom: 20px; text-align: left; font-family: monospace; line-height: 1.5; }
     </style>
 </head>
@@ -112,7 +114,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['document_file'])) {
                 <div style="font-size: 12px; color: #64748b; margin-top: 5px;">Supports: JPG, JPEG, PNG</div>
                 <input type="file" name="document_file" required>
             </div>
-            <button type="submit" class="btn-submit">Upload & Verify Live</button>
+
+            <div style="display: flex; gap: 15px; width: 100%;">
+                <button type="button" onclick="history.back()" class="btn-back">
+                    Back
+                </button>
+                <button type="submit" class="btn-submit">
+                    Upload & Verify Live
+                </button>
+            </div>
         </form>
     </div>
 
