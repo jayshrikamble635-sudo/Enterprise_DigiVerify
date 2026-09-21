@@ -1,14 +1,14 @@
 <?php
 
-$conn = mysqli_connect(
-    "localhost",
-    "root",
-    "",
-    "digiverify"
-);
+$host = "localhost";
+$user = "root";
+$password = "";
+$database = "digiverify";
 
-if(!$conn){
-    die("Database Connection Failed");
+$conn = new mysqli($host, $user, $password, $database);
+
+if($conn->connect_error){
+    die("Database Connection Failed : " . $conn->connect_error);
 }
 
 ?>
