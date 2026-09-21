@@ -8,14 +8,14 @@ $message_class = "";
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['document_file'])) {
     
-    // 🔥 Clever Cloud MySQL Live Connection (अब बिल्कुल सही होस्ट के साथ)
     $conn = @new mysqli(
-        "://clever-cloud.com", 
-        "usmmcxltshqjsde2", 
-        "4yIROXJGxupdTzB6dZm", 
-        "bnljgn27equjadrmm6w7", 
-        3306
-    );
+    "://clever-cloud.com", 
+    "usmmcxltshqjsde2", 
+    "4yIROXJGxupdTzB6dZm", 
+    "bnljgn27equjadrmm6w7", 
+    3306
+);
+
     
     if ($conn && !$conn->connect_error) {
         $conn->set_charset("utf8mb4");
