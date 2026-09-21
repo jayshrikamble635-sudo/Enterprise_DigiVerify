@@ -3,23 +3,22 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-// Render के Environment Variables को पढ़ने के लिए सही तरीका
-$servername = getenv('DB_HOST') ?: "localhost";
-$username = getenv('DB_USER') ?: "root";
-$password = getenv('DB_PASS') ?: "";
-$dbname = getenv('DB_NAME') ?: "digiverify_db";
+// साफ़ और सटीक लाइव क्रेडेंशियल्स (बिना किसी :// या एक्स्ट्रा सिंबल के)
+$servername = "://clever-cloud.com";
+$username = "usmmcxltshqjsde2";
+$password = "4yIROXJGxupdTdzB6dZm";
+$dbname = "bnljgn27equjadrmm6w7";
 
 $message = "";
 $message_class = "";
-// ... बाकी का नीचे का कोड बिल्कुल वैसा ही रहने दें ...
-
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['document_file'])) {
+    // बिना किसी रिस्क के सीधे लाइव डेटाबेस से कनेक्ट करना
     $conn = @new mysqli($servername, $username, $password, $dbname);
     
     if ($conn && !$conn->connect_error) {
-        // uploads फ़ोल्डर बाहर (parent directory) में है
-        $target_dir = dirname(__DIR__) . "/uploads/";
+        $conn->set_charset("utf8mb4");
+
         
         if (!file_exists($target_dir)) {
             mkdir($target_dir, 0777, true);
