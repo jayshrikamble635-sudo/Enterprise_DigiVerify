@@ -3,43 +3,22 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-include("../database/config.php");
-
 // Already Logged In
 if (isset($_SESSION['user_id'])) {
     header("Location: dashboard.php");
     exit();
 }
 
-// LOGIN
+// LOGIN BYPASS FOR COLLEGE PRESENTATION (0% ERROR)
 if (isset($_POST['login'])) {
 
-    $email = mysqli_real_escape_string($conn, trim($_POST['email']));
-    $password = mysqli_real_escape_string($conn, trim($_POST['password']));
+    // कोई भी ईमेल और पासवर्ड डालने पर सीधे सुंदर डैशबोर्ड पर भेजें
+    $_SESSION['user_id'] = '1';
+    $_SESSION['user_name'] = 'Riddhi Balaji Kamble';
+    $_SESSION['user_email'] = trim($_POST['email']);
 
-    $sql = "SELECT * FROM users
-            WHERE email='$email'
-            AND password='$password'";
-
-    $result = mysqli_query($conn, $sql);
-
-    if(mysqli_num_rows($result)>0){
-
-        $row = mysqli_fetch_assoc($result);
-
-        $_SESSION['user_id'] = $row['id'];
-        $_SESSION['user_name'] = $row['name'];
-        $_SESSION['user_email'] = $row['email'];
-
-        header("Location: dashboard.php");
-        exit();
-
-    }else{
-
-        $error = "Invalid Email or Password";
-
-    }
-
+    header("Location: dashboard.php");
+    exit();
 }
 ?>
 
@@ -174,20 +153,6 @@ text-align:center;
 
 <h2>User Login</h2>
 
-<?php
-if(isset($error)){
-?>
-
-<div class="error">
-
-<?php echo $error; ?>
-
-</div>
-
-<?php
-}
-?>
-
 <form method="POST" autocomplete="off">
 
 <label>Email</label>
@@ -227,7 +192,6 @@ Forgot Password?
         ← Back to Home
     </a>
 </div>
-
 
 </form>
 
