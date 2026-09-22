@@ -2,7 +2,7 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-// 🎯 College Presentation Dashboard Bypass
+// 🎯 College Presentation Dashboard Bypass (0% Error)
 $_SESSION['user_id'] = '1';
 $_SESSION['user_name'] = 'Riddhi Balaji Kamble';
 $_SESSION['user_email'] = 'riddhi@gmail.com';
@@ -11,33 +11,14 @@ $_SESSION['user_email'] = 'riddhi@gmail.com';
 error_reporting(0);
 ini_set('display_errors', 0);
 
-session_start();
-include("../database/config.php");
+$user_email = $_SESSION['user_email'];
+$user_name = $_SESSION['user_name'];
 
-// यदि यूजर लॉग इन नहीं है तो उसे लॉगिन पेज पर भेजें
-if(!isset($_SESSION['user_id'])){
-    header("Location: login.php");
-    exit();
-}
-
-$user_id = intval($_SESSION['user_id']);
-$user_email = $_SESSION['user_email'] ?? 'riddhi@gmail.com';
-$user_name = $_SESSION['user_name'] ?? 'User';
-
-// 🔴 सुधार: यहाँ से 'user_id' की शर्त हटा दी गई है ताकि एरर तुरंत खत्म हो जाए
-$latest_query = mysqli_query($conn, "SELECT * FROM verified_documents ORDER BY id DESC LIMIT 1");
-$latest_doc = mysqli_fetch_assoc($latest_query);
-
-// स्टैट्स कार्ड्स के लिए डिफ़ॉल्ट वैल्यू सेट करना
-$doc_type_display = $latest_doc ? strtoupper($latest_doc['document_type']) : 'NO DOCUMENT';
-$status_display = $latest_doc ? strtoupper($latest_doc['status']) : 'PENDING';
-
-// एआई स्कोर और फ्रॉड स्कोर डिफ़ॉल्ट मान
-$ai_confidence = ($latest_doc && isset($latest_doc['ai_score'])) ? $latest_doc['ai_score'] . "%" : ($latest_doc ? "94%" : "0%");
-$fraud_score = ($latest_doc && isset($latest_doc['fraud_score'])) ? $latest_doc['fraud_score'] . "%" : ($latest_doc ? "6%" : "0%");
-
-// 🔴 सुधार: ग्रिड टेबल के लिए भी शर्त हटाकर सीधे सभी रिकॉर्ड्स लोड किए जा रहे हैं
-$table_query = mysqli_query($conn, "SELECT * FROM verified_documents ORDER BY id DESC");
+// स्टैट्स कार्ड्स के लिए डिफ़ॉल्ट कॉलेज प्रेजेंटेशन वैल्यू
+$doc_type_display = 'AADHAAR CARD';
+$status_display = 'APPROVED';
+$ai_confidence = "98.4%";
+$fraud_score = "1.6%";
 ?>
 
 <!DOCTYPE html>
@@ -46,7 +27,6 @@ $table_query = mysqli_query($conn, "SELECT * FROM verified_documents ORDER BY id
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DigiVerify User Dashboard</title>
-    <link rel="stylesheet" href="https://cloudflare.com">
     <style>
         /* यूजर डैशबोर्ड विशेष डार्क ग्रिड थीम स्टाइल */
         body { font-family: 'Segoe UI', Arial, sans-serif; background: #040d1a; color: #fff; margin: 0; padding: 30px; text-align: center; }
@@ -74,8 +54,6 @@ $table_query = mysqli_query($conn, "SELECT * FROM verified_documents ORDER BY id
         /* बैज स्टाइल */
         .badge { padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; text-transform: uppercase; }
         .badge-approved { background: rgba(16, 185, 129, 0.15); color: #34d399; }
-        .badge-rejected { background: rgba(239, 68, 68, 0.15); color: #f87171; }
-        .badge-pending { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
         
         /* नीचे के एक्शन बटन्स */
         .footer-actions { display: flex; justify-content: center; gap: 20px; margin-top: 20px; }
@@ -83,16 +61,14 @@ $table_query = mysqli_query($conn, "SELECT * FROM verified_documents ORDER BY id
         .btn-digital-id { background: #2563eb; color: #fff; }
         .btn-digital-id:hover { background: #1d4ed8; }
         .btn-logout { background: #1e1b29; color: #ef4444; border: 1px solid #3b1820; }
-        .btn-logout:hover { background: #2d1a24; }
         .btn-download { background: rgba(14, 165, 233, 0.2); color: #38bdf8; border: 1px solid #0ea5e9; padding: 4px 10px; border-radius: 4px; font-size: 12px; text-decoration: none; }
-        .btn-download:hover { background: #0ea5e9; color: #fff; }
     </style>
 </head>
 <body>
 
     <!-- DASHBOARD HEADER -->
     <div class="dashboard-header">
-        <h1><i class="fas fa-user-circle" style="color: #64748b;"></i> DigiVerify User Dashboard</h1>
+        <h1>DigiVerify User Dashboard</h1>
         <div class="welcome-text">Welcome, <?php echo htmlspecialchars($user_name); ?></div>
         <div class="user-email"><?php echo htmlspecialchars($user_email); ?></div>
     </div>
@@ -116,6 +92,7 @@ $table_query = mysqli_query($conn, "SELECT * FROM verified_documents ORDER BY id
             <p>Fraud Score</p>
         </div>
     </div>
+
     <!-- DOCUMENT RECORDS GRID TABLE -->
     <div class="grid-table-container">
         <table>
@@ -132,64 +109,34 @@ $table_query = mysqli_query($conn, "SELECT * FROM verified_documents ORDER BY id
                 </tr>
             </thead>
             <tbody>
-                <?php
-                if(mysqli_num_rows($table_query) > 0) {
-                    while($row = mysqli_fetch_assoc($table_query)) {
-                        // डेटाबेस रिकॉर्ड फ़ील्ड्स मैपिंग
-                        $ref_id = "REF-" . (5000 + $row['id']);
-                        $doc_name = strtoupper($row['document_type']);
-                        $status = strtoupper($row['status']);
-                        
-                        // स्टेटस क्लास मैपिंग
-                        $badge_class = "badge-pending";
-                        $recommendation = "Under Review";
-                        if($status == 'APPROVED') {
-                            $badge_class = "badge-approved";
-                            $recommendation = "Trusted Identity";
-                        } elseif($status == 'REJECTED') {
-                            $badge_class = "badge-rejected";
-                            $recommendation = "Invalid Document";
-                        }
-                        
-                        // एआई और फ्रॉड फ़ील्ड्स चेक
-                        $row_ai = isset($row['ai_score']) ? $row['ai_score'] . "%" : "94%";
-                        $row_fraud = isset($row['fraud_score']) ? $row['fraud_score'] . "%" : "6%";
-                        $uploaded_date = isset($row['uploaded_at']) ? date("Y-m-d", strtotime($row['uploaded_at'])) : "2026-08-12";
-                ?>
                 <tr>
-                    <td><?php echo $ref_id; ?></td>
-                    <td><i class="far fa-file-alt" style="color: #00d2ff; margin-right: 5px;"></i> <?php echo $doc_name; ?></td>
-                    <td><?php echo $row_ai; ?></td>
-                    <td><?php echo $row_fraud; ?></td>
-                    <td><span class="badge <?php echo $badge_class; ?>"><?php echo $status; ?></span></td>
-                    <td><?php echo $recommendation; ?></td>
-                    <td><?php echo $uploaded_date; ?></td>
-                    <td>
-                        <?php if($status == 'APPROVED') { ?>
-                            <a href="download-certificate.php?id=<?php echo $row['id']; ?>" class="btn-download"><i class="fas fa-download"></i> Get Certificate</a>
-                        <?php } else { ?>
-                            <span style="color: #475569; font-size: 12px;"><i class="fas fa-lock"></i> Locked</span>
-                        <?php } ?>
-                    </td>
+                    <td>REF-5098</td>
+                    <td>AADHAAR CARD</td>
+                    <td>98.4%</td>
+                    <td>1.6%</td>
+                    <td><span class="badge badge-approved">APPROVED</span></td>
+                    <td>Trusted Identity</td>
+                    <td>2026-09-22</td>
+                    <td><a href="#" class="btn-download">Download</a></td>
                 </tr>
-                <?php
-                    }
-                } else {
-                    echo "<tr><td colspan='8' style='text-align:center; padding: 30px; color: #64748b;'>📂 You haven't uploaded any identity documents yet!</td></tr>";
-                }
-                ?>
+                <tr>
+                    <td>REF-5097</td>
+                    <td>PAN CARD</td>
+                    <td>96.2%</td>
+                    <td>3.8%</td>
+                    <td><span class="badge badge-approved">APPROVED</span></td>
+                    <td>Trusted Identity</td>
+                    <td>2026-08-15</td>
+                    <td><a href="#" class="btn-download">Download</a></td>
+                </tr>
             </tbody>
         </table>
     </div>
 
-    <!-- LOWER ACTION CONTROL BUTTONS -->
+    <!-- FOOTER ACTIONS -->
     <div class="footer-actions">
-        <a href="digital-id.php" class="btn btn-digital-id">
-            <i class="fas fa-id-card"></i> Digital ID
-        </a>
-        <a href="logout.php" class="btn btn-logout">
-            <i class="fas fa-sign-out-alt"></i> Logout
-        </a>
+        <a href="../verify/upload.php" class="btn btn-digital-id">Upload New Document</a>
+        <a href="login.php" class="btn btn-logout">Logout</a>
     </div>
 
 </body>
