@@ -225,7 +225,8 @@ $fraud_score = "6%";
 
     <!-- FOOTER ACTIONS BUTTONS -->
     <div class="footer-actions">
-        <a href="#" class="btn btn-digital-id">Digital ID</a>
+        <a href="digital-id.php" class="btn btn-digital-id">Digital ID</a>
+
         <a href="login.php" class="btn btn-logout">Logout</a>
     </div>
 
