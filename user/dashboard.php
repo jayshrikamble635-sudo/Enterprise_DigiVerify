@@ -49,12 +49,12 @@ $fraud_score = "6%";
         .btn-digital-id { background: #2563eb; color: #fff; }
         .btn-digital-id:hover { background: #1d4ed8; }
         .btn-logout { background: #1e1b29; color: #ef4444; border: 1px solid #3b1820; }
-        .btn-download { background: rgba(14, 165, 233, 0.2); color: #38bdf8; border: 1px solid #0ea5e9; padding: 4px 10px; border-radius: 4px; font-size: 12px; text-decoration: none; display: inline-block; width: 90px; text-align: center; }
+        .btn-download { background: rgba(14, 165, 233, 0.2); color: #38bdf8; border: 1px solid #0ea5e9; padding: 4px 10px; border-radius: 4px; font-size: 12px; text-decoration: none; display: inline-block; width: 110px; text-align: center; font-weight: 600; }
         .btn-download:hover { background: #0ea5e9; color: #fff; }
     </style>
 </head>
 <body>
-        <!-- DASHBOARD HEADER -->
+    <!-- DASHBOARD HEADER -->
     <div class="dashboard-header">
         <h1>DigiVerify User Dashboard</h1>
         <div class="welcome-text">Welcome, <?php echo htmlspecialchars($user_name); ?></div>
@@ -105,7 +105,7 @@ $fraud_score = "6%";
                     <td><span class="badge badge-approved">APPROVED</span></td>
                     <td>Trusted Identity</td>
                     <td>2026-08-12</td>
-                    <td><a href="#" class="btn-download">Get Certificate</a></td>
+                    <td><a href="DigiVerify_Certificate_98.html" download class="btn-download">Get Certificate</a></td>
                 </tr>
                 <tr>
                     <td>REF-5012</td>
@@ -115,7 +115,7 @@ $fraud_score = "6%";
                     <td><span class="badge badge-approved">APPROVED</span></td>
                     <td>Trusted Identity</td>
                     <td>2026-08-12</td>
-                    <td><a href="#" class="btn-download">Get Certificate</a></td>
+                    <td><a href="DigiVerify_Certificate_98.html" download class="btn-download">Get Certificate</a></td>
                 </tr>
                 <tr>
                     <td>REF-5011</td>
@@ -127,8 +127,7 @@ $fraud_score = "6%";
                     <td>2026-08-12</td>
                     <td><span style="color: #64748b; font-size:12px;">Locked</span></td>
                 </tr>
-
-                                <tr>
+                <tr>
                     <td>REF-5010</td>
                     <td>AADHAAR CARD (UIDAI)</td>
                     <td>94%</td>
@@ -136,7 +135,7 @@ $fraud_score = "6%";
                     <td><span class="badge badge-approved">APPROVED</span></td>
                     <td>Trusted Identity</td>
                     <td>2026-08-12</td>
-                    <td><a href="#" class="btn-download">Get Certificate</a></td>
+                    <td><a href="DigiVerify_Certificate_98.html" download class="btn-download">Get Certificate</a></td>
                 </tr>
                 <tr>
                     <td>REF-5009</td>
@@ -146,7 +145,7 @@ $fraud_score = "6%";
                     <td><span class="badge badge-approved">APPROVED</span></td>
                     <td>Trusted Identity</td>
                     <td>2026-08-12</td>
-                    <td><a href="#" class="btn-download">Get Certificate</a></td>
+                    <td><a href="DigiVerify_Certificate_98.html" download class="btn-download">Get Certificate</a></td>
                 </tr>
                 <tr>
                     <td>REF-5008</td>
@@ -156,7 +155,7 @@ $fraud_score = "6%";
                     <td><span class="badge badge-approved">APPROVED</span></td>
                     <td>Trusted Identity</td>
                     <td>2026-08-12</td>
-                    <td><a href="#" class="btn-download">Get Certificate</a></td>
+                    <td><a href="DigiVerify_Certificate_98.html" download class="btn-download">Get Certificate</a></td>
                 </tr>
                 <tr>
                     <td>REF-5007</td>
@@ -186,10 +185,9 @@ $fraud_score = "6%";
                     <td><span class="badge badge-approved">APPROVED</span></td>
                     <td>Trusted Identity</td>
                     <td>2026-08-12</td>
-                    <td><a href="#" class="btn-download">Get Certificate</a></td>
+                    <td><a href="DigiVerify_Certificate_98.html" download class="btn-download">Get Certificate</a></td>
                 </tr>
-
-                                <tr>
+                <tr>
                     <td>REF-5004</td>
                     <td>AADHAAR CARD (UIDAI)</td>
                     <td>94%</td>
@@ -197,7 +195,7 @@ $fraud_score = "6%";
                     <td><span class="badge badge-approved">APPROVED</span></td>
                     <td>Trusted Identity</td>
                     <td>2026-08-12</td>
-                    <td><a href="#" class="btn-download">Get Certificate</a></td>
+                    <td><a href="DigiVerify_Certificate_98.html" download class="btn-download">Get Certificate</a></td>
                 </tr>
                 <tr>
                     <td>REF-5003</td>
@@ -217,7 +215,7 @@ $fraud_score = "6%";
                     <td><span class="badge badge-approved">APPROVED</span></td>
                     <td>Trusted Identity</td>
                     <td>2026-08-12</td>
-                    <td><a href="#" class="btn-download">Get Certificate</a></td>
+                    <td><a href="DigiVerify_Certificate_98.html" download class="btn-download">Get Certificate</a></td>
                 </tr>
             </tbody>
         </table>
@@ -226,11 +224,8 @@ $fraud_score = "6%";
     <!-- FOOTER ACTIONS BUTTONS -->
     <div class="footer-actions">
         <a href="digital-id.php" class="btn btn-digital-id">Digital ID</a>
-
         <a href="login.php" class="btn btn-logout">Logout</a>
     </div>
 
 </body>
 </html>
-
-
