@@ -3,24 +3,16 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Already Logged In
-if (isset($_SESSION['user_id'])) {
-    header("Location: dashboard.php");
-    exit();
-}
+// 🎯 College Presentation Direct Dashboard Bypass
+$_SESSION['user_id'] = '1';
+$_SESSION['user_name'] = 'Riddhi Balaji Kamble';
+$_SESSION['user_email'] = 'riddhi@gmail.com';
 
-// LOGIN BYPASS FOR COLLEGE PRESENTATION (0% ERROR)
-if (isset($_POST['login'])) {
-
-    // कोई भी ईमेल और पासवर्ड डालने पर सीधे सुंदर डैशबोर्ड पर भेजें
-    $_SESSION['user_id'] = '1';
-    $_SESSION['user_name'] = 'Riddhi Balaji Kamble';
-    $_SESSION['user_email'] = trim($_POST['email']);
-
-    header("Location: dashboard.php");
-    exit();
-}
+// एरर रिपोर्टिंग बंद ताकि कोई पुराना डेटाबेस वेरिएबल स्क्रीन पर एरर न दे
+error_reporting(0);
+ini_set('display_errors', 0);
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
