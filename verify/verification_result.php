@@ -10,11 +10,15 @@ $password = "4yIROXJGxupdTdzB6dZm";
 $dbname = "bnljgn27equjadrmm6w7";
 $port = 3306;
 
-$conn = @new mysqli($servername, $username, $password, $dbname, $port);
+    // 🔥 Clever Cloud MySQL Live Connection 
+    $conn = @new mysqli(
+        "://clever-cloud.com", 
+        "usmmcxltshqjsde2", 
+        "4yIROXJGxupdTzB6dZm", 
+        "bnljgn27equjadrmm6w7", 
+        3306
+    );
 
-if ($conn && !$conn->connect_error) {
-    $conn->set_charset("utf8mb4");
-}
 
 // डिफ़ॉल्ट डमी डेटा (यदि डेटाबेस में 98 आईडी न मिले तो स्क्रीन खाली न दिखे)
 $name = "RIDDHI BALAJI KAMBLE";
