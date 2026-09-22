@@ -7,7 +7,7 @@ if(isset($_SESSION['subadmin_id'])){
     exit();
 }
 if(isset($_POST['login'])){
-    // बाईपास लॉजिक प्रस्तुति के लिए
+    // कॉलेज प्रेजेंटेशन के लिए 100% वर्किंग बाईपास लॉजिक
     $_SESSION['subadmin_id'] = 1;
     $_SESSION['subadmin_name'] = "Sub Administrator";
     $_SESSION['subadmin_email'] = trim($_POST['email']);
@@ -41,12 +41,19 @@ if(isset($_POST['login'])){
         <h2>Sub-Admin Gateway</h2>
         <div class="login-sub">Secure Node Access</div>
         
+        <!-- autocomplete="off" ब्राउज़र को पुरानी हिस्ट्री याद रखने से रोकता है -->
         <form method="POST" autocomplete="off">
+            
+            <!-- क्रोम के चालाक ऑटो-फिल बॉट्स को बेवकूफ बनाने के लिए हिडन फेक इनपुट्स -->
+            <input type="text" name="fake_email_remember" style="display:none;" aria-hidden="true">
+            <input type="password" name="fake_password_remember" style="display:none;" aria-hidden="true">
+
             <label>Node Username / Email</label>
-            <input type="text" name="email" placeholder="Enter assigned node email" required>
+            <!-- autocomplete="new-password" लगाने से ब्राउज़र पुराना डेटा इन्सर्ट नहीं कर पाता -->
+            <input type="email" name="email" placeholder="Enter assigned node email" autocomplete="new-password" required>
 
             <label>Security Key / Password</label>
-            <input type="password" name="password" placeholder="Enter password" required>
+            <input type="password" name="password" placeholder="Enter password" autocomplete="new-password" required>
 
             <button type="submit" name="login">Authorize Node Session</button>
             
