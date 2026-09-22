@@ -103,7 +103,7 @@ $recent = mysqli_query(
 
     <!-- FONT AWESOME -->
     <link rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+          href="https://cloudflare.com">
 
 </head>
 
@@ -124,9 +124,7 @@ $recent = mysqli_query(
     <header class="top-header">
 
         <div class="header-left">
-
             <h1>Sub Admin Dashboard</h1>
-        <div class="header-left">
             <p>
                 Welcome back,
                 <strong>Sub Administrator</strong>
