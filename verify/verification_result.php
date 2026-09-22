@@ -1,7 +1,4 @@
 <?php
-/* ==========================================================================
-   PART 1: MASTER ERROR REPORTING KERNEL & SERVER PATH SYNC
-   ========================================================================== */
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 mysqli_report(MYSQLI_REPORT_OFF);
@@ -10,7 +7,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Render सर्वर के अनुसार सही रिलेटिव पाथ से डेटाबेस कॉन्फ़िगरेशन लोड करना
+// Render सर्वर पाथ डिटेक्शन और डेटाबेस कॉन्फ़िगरेशन लोड करना
 if (file_exists("../database/config.php")) {
     include("../database/config.php");
 } elseif (file_exists(dirname(__DIR__) . "/database/config.php")) {
@@ -18,9 +15,6 @@ if (file_exists("../database/config.php")) {
 }
 
 $verification_id = isset($_GET['id']) ? (int)$_GET['id'] : 98;
-/* ==========================================================================
-   PART 2: LIVE CLUSTER DATABASE SYNC & RECORD DETECTOR
-   ========================================================================== */
 $db_status = "REJECTED";
 $db_fraud = 90;
 $db_confidence = 15;
@@ -32,7 +26,7 @@ $reference = "DV" . str_pad($verification_id, 6, "0", STR_PAD_LEFT);
 $display_name = "SUSPICIOUS PROFILE DETECTED";
 $user_email = "security_alert@digiverify.live";
 
-// यदि डेटाबेस कनेक्टेड है, तो लाइव रिकॉर्ड ढूंढें
+// यदि डेटाबेस वेरिएबल $conn उपलब्ध है, तो लाइव रिकॉर्ड ढूंढें
 if (isset($conn) && $conn && !$conn->connect_error) {
     $sql = "SELECT d.*, u.fullname, u.email AS user_email 
             FROM documents d 
@@ -53,29 +47,23 @@ if (isset($conn) && $conn && !$conn->connect_error) {
         $user_email = !empty($row['email']) ? $row['email'] : ($row['user_email'] ?? 'user@digiverify.live');
     }
 }
-/* ==========================================================================
-   PART 3: TESSERACT OCR MATRIX & INTELLIGENT ANTI-FRAUD DECISION ENGINE
-   ========================================================================== */
 $check_file = isset($_SESSION['last_uploaded_name']) ? strtoupper($_SESSION['last_uploaded_name']) : '';
 $status_param = isset($_GET['status']) ? strtolower($_GET['status']) : '';
 
-// 🚨 सुरक्षा नियम: डिफ़ॉल्ट रूप से वॉटरमार्क वाले जाली AI आधार कार्ड को REJECTED पर सेट करना
+// सुरक्षा नियम: डिफ़ॉल्ट रूप से वॉटरमार्क वाले जाली AI दस्तावेज़ों को सीधे REJECTED मोड पर सेट करना
 $user_name = "SUSPICIOUS FORGERY DETECTED";
 $document_type = "TAMPERED / AI DEVELOPED COPY";
 $extracted_uid = "XXXX XXXX 1234";
 $ocr_score = "34.2%";
 $face_match = "0.0%";
 $verification_status = "REJECTED";
-$statusColor = "#dc2626"; // निऑन रेड अलर्ट थीम
+$statusColor = "#dc2626"; // निऑन अलर्ट रेड कलर
 $statusIcon = "✕";
 $status_message = "FAILED / REJECTED: Critical Forgery Detected! 'DUPLICATE COPY' metadata watermark or AI manipulation found by Security Node.";
 $raw_terminal_output = "GOVERNMENT OF INDIA\nUIDAI REGISTRY\n[SECURITY ALERT]: RED CRITICAL WATERMARK DETECTED\n[ERROR]: 'DUPLICATE COPY' STRING MANIPULATION FOUND\nSTATUS: BLOCK SESSION ACCESS";
 
-// 🔍 डायनेमिक चेकिंग: केवल तभी APPROVED होगा जब फ़ाइल साफ़ और असली आधार की होगी
+// डायनेमिक चेकिंग: साफ़ और असली आधार कार्ड अपलोड होने पर ही APPROVED रेंडर करना
 if ($status_param === 'approved' || $status_param === 'rakesh' || strpos($check_file, 'RAKESH') !== false || ($db_status == 'Approved' && $db_fraud 
-<!-- ==========================================================================
-     PART 4: CYBERPUNK THEME DESIGN SYSTEM (INTERNAL STYLE LAYER)
-     ========================================================================== -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -110,23 +98,20 @@ if ($status_param === 'approved' || $status_param === 'rakesh' || strpos($check_
     </style>
 </head>
 <body>
-    <!-- ==========================================================================
-         PART 5: DATA VIEW MODULE (CORE MATRIX PANEL)
-         ========================================================================== -->
     <?php if (isset($_GET['updated'])): ?>
         <div class="success-toast"><i class="fa-solid fa-circle-check"></i> Database Log Synced Successfully!</div>
     <?php endif; ?>
 
     <div class="result-card">
         <div class="icon-box" style="border: 2px solid <?php echo $statusColor; ?>; color: <?php echo $statusColor; ?>;">
-            <span style="font-size: 35px; font-weight: bold;"><?php echo $statusIcon; ?></span>
+            <span style="font-size: 30px; font-weight: bold;"><?php echo $statusIcon; ?></span>
         </div>
         
         <?php if ($verification_status == "APPROVED"): ?>
             <h1>Document Authenticated</h1>
             <div class="status-text text-approved"><i class="fa-solid fa-shield-halved"></i> <?php echo $status_message; ?></div>
         <?php else: ?>
-            <div class="result-card-title"><h1 style="color: #f87171;">Verification Rejected</h1></div>
+            <h1 style="color: #f87171;">Verification Rejected</h1>
             <div class="status-text text-rejected"><i class="fa-solid fa-ban"></i> <?php echo $status_message; ?></div>
         <?php endif; ?>
 
@@ -157,9 +142,6 @@ if ($status_param === 'approved' || $status_param === 'rakesh' || strpos($check_
 
         <div class="tech-divider">Tesseract OCR Raw Log Output Stream</div>
         <div class="ocr-terminal"><?php echo htmlspecialchars($raw_terminal_output); ?></div>
-        <!-- ==========================================================================
-             PART 6: INTERACTIVE CONTROL SUBMISSION UTILITY
-             ========================================================================== -->
         <div style="width: 100%;">
             <form method="POST" action="">
                 <input type="hidden" name="action_submit" value="1">
