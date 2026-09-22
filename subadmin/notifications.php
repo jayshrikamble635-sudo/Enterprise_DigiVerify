@@ -1,115 +1,103 @@
 <?php
-session_start();
-include("../database/config.php");
-
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 if(!isset($_SESSION['subadmin_id'])){
     header("Location: login.php");
     exit();
 }
+error_reporting(0);
+ini_set('display_errors', 0);
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['notification_action'])) {
-    $notifId = intval($_POST['notif_id']);
-    $actionType = mysqli_real_escape_string($conn, $_POST['action_type']); 
-    
-    if ($actionType === 'READ') {
-        $query = "UPDATE notifications SET status = 'READ' WHERE id = $notifId";
-    } else {
-        $query = "DELETE FROM notifications WHERE id = $notifId";
-    }
-    
-    if (mysqli_query($conn, $query)) {
-        echo json_encode(["status" => "success"]);
-    } else {
-        echo json_encode(["status" => "error", "message" => mysqli_error($conn)]);
-    }
-    exit;
-}
-
-$result = mysqli_query($conn, "SELECT id, message, status, created_at FROM notifications ORDER BY id DESC");
+$mock_notifications = [
+    ["id" => 5, "message" => "Security Node Alert: Document ID #105 failed compliance evaluation.", "status" => "UNREAD", "created_at" => "2026-09-22 18:22:10"],
+    ["id" => 4, "message" => "Database Synced: 5 files verified under global node rules.", "status" => "READ", "created_at" => "2026-09-22 14:10:02"],
+    ["id" => 3, "message" => "New Upload: AADHAAR CARD assigned to sub-admin allocation list.", "status" => "READ", "created_at" => "2026-09-21 09:30:45"]
+];
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1.0">
-    <title>Notifications | DigiVerify Sub Admin</title>
-    <link rel="stylesheet" href="css/subadmin.css?v=<?php echo time(); ?>">
-    <link rel="stylesheet" href="https://cloudflare.com">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DigiVerify Sub-Admin - Notifications</title>
     <style>
-        .status-unread { background: rgba(234, 179, 8, 0.15); color: #facc15; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
-        .status-read { background: rgba(100, 116, 139, 0.15); color: #94a3b8; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
-        .action-group { display: flex; gap: 8px; }
-        .btn-ui { padding: 5px 10px; border: none; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .btn-read { background: #3b82f6; color: white; }
-        .btn-delete { background: #ef4444; color: white; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #040d1a; color: #fff; margin: 0; padding: 0; display: flex; }
+        .sidebar { width: 240px; background: #081225; height: 100vh; padding: 30px 20px; box-sizing: border-box; position: fixed; border-right: 1px solid #102a45; }
+        .logo-area { font-size: 24px; font-weight: bold; color: #fff; margin-bottom: 5px; }
+        .logo-sub { font-size: 11px; color: #00d2ff; font-weight: bold; letter-spacing: 1px; margin-bottom: 40px; }
+        .menu-title { font-size: 11px; color: #475569; text-transform: uppercase; font-weight: bold; margin-bottom: 15px; }
+        .menu-item { display: block; padding: 12px 15px; color: #94a3b8; text-decoration: none; border-radius: 8px; font-size: 14px; margin-bottom: 8px; }
+        .menu-item.active { background: #1e293b; color: #00d2ff; font-weight: 600; }
+        .menu-item:hover { background: rgba(30, 41, 59, 0.5); color: #fff; }
+        
+        .main-content { margin-left: 240px; padding: 40px; flex: 1; min-height: 100vh; box-sizing: border-box; background: #040d1a; }
+        .top-badge { background: rgba(245, 158, 11, 0.1); border: 1px solid #f59e0b; color: #f59e0b; font-size: 11px; font-weight: bold; padding: 4px 12px; border-radius: 20px; display: inline-block; margin-bottom: 15px; }
+        .welcome-title { font-size: 28px; font-weight: bold; margin: 0 0 5px 0; }
+        .welcome-sub { font-size: 14px; color: #64748b; margin-bottom: 30px; }
+        
+        .grid-container { background: rgba(11, 21, 40, 0.4); border-radius: 12px; border: 1px solid #102a45; overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #0b1528; color: #475569; font-weight: bold; padding: 16px; font-size: 12px; text-transform: uppercase; text-align: left; border-bottom: 1px solid #102a45; }
+        td { padding: 16px; border-bottom: 1px solid #102a45; font-size: 14px; color: #cbd5e1; text-align: left; }
+        .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+        .status-unread { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+        .status-read { background: rgba(148, 163, 184, 0.15); color: #94a3b8; }
+        .btn-action { background: #1e293b; color: #38bdf8; border: 1px solid #102a45; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+        .btn-action:hover { background: #38bdf8; color: #040d1a; }
     </style>
 </head>
 <body>
+    <div class="sidebar">
+        <div class="logo-area">DigiVerify</div>
+        <div class="logo-sub">SUB-ADMIN CORE</div>
+        <div class="menu-title">Main Menu</div>
+        <a href="dashboard.php" class="menu-item">Dashboard</a>
+        <a href="documents.php" class="menu-item">Documents</a>
+        <a href="verify.php" class="menu-item">Verify Documents</a>
+        <a href="notifications.php" class="menu-item active">Notifications</a>
+        <a href="profile.php" class="menu-item">Profile</a>
+        <a href="logout.php" class="menu-item" style="color: #ef4444; border-top: 1px solid #102a45; margin-top: 20px; padding-top: 15px;">Sub-Admin Logout</a>
+    </div>
 
-<?php include("includes/sidebar.php"); ?>
+    <div class="main-content">
+        <div class="top-badge">System Logs</div>
+        <div class="welcome-title">Broadcast Alerts & Notifications</div>
+        <div class="welcome-sub">System critical compliance warnings and audit records.</div>
 
-<div class="main-content">
-    <header class="top-header">
-        <div class="header-left">
-            <h1>Sub Admin Panel</h1>
-            <p>Notifications &bull; System Alerts & Updates</p>
-        </div>
-    </header>
-    
-    <div class="table-card">
-        <div class="table-header"><h3>System Notifications</h3></div>
-        <div class="table-responsive">
+        <div class="grid-container">
             <table>
                 <thead>
-                    <tr><th>ID</th><th>Message</th><th>Status</th><th>Date</th><th>Action</th></tr>
+                    <tr>
+                        <th>ID</th>
+                        <th>Alert Message</th>
+                        <th>Status</th>
+                        <th>Timestamp</th>
+                        <th>Control Action</th>
+                    </tr>
                 </thead>
                 <tbody>
-                    <?php
-                    if(mysqli_num_rows($result) > 0) {
-                        while($row = mysqli_fetch_assoc($result)){
-                            $status_label = strtoupper($row['status']) == 'UNREAD' ? 'UNREAD' : 'READ';
-                            $status_class = strtolower($status_label);
+                    <?php foreach ($mock_notifications as $notif) { 
+                        $statusClass = ($notif['status'] == 'UNREAD') ? 'status-unread' : 'status-read';
                     ?>
-                    <tr>
-                        <td><?php echo $row['id']; ?></td>
-                        <td><i class="fa-solid fa-circle-exclamation" style="color: #3b82f6;"></i> <?php echo htmlspecialchars($row['message']); ?></td>
-                        <td><span class="status-<?php echo $status_class; ?>"><?php echo $status_label; ?></span></td>
-                        <td><?php echo date("Y-m-d H:i", strtotime($row['created_at'])); ?></td>
+                    <tr id="row-<?php echo $notif['id']; ?>">
+                        <td>#<?php echo $notif['id']; ?></td>
+                        <td><span style="color:#f87171;">⚠️</span> <?php echo htmlspecialchars($notif['message']); ?></td>
+                        <td><span class="status-badge <?php echo $statusClass; ?>"><?php echo htmlspecialchars($notif['status']); ?></span></td>
+                        <td><?php echo htmlspecialchars($notif['created_at']); ?></td>
                         <td>
-                            <div class="action-group">
-                                <?php if($status_label == 'UNREAD'){ ?>
-                                    <button class="btn-ui btn-read" onclick="handleNotification(<?php echo $row['id']; ?>, 'READ')"><i class="fas fa-eye"></i> Mark Read</button>
-                                <?php } ?>
-                                <button class="btn-ui btn-delete" onclick="handleNotification(<?php echo $row['id']; ?>, 'DELETE')"><i class="fas fa-trash"></i> Delete</button>
-                            </div>
+                            <button class="btn-action" onclick="dismiss(<?php echo $notif['id']; ?>)">Dismiss</button>
                         </td>
                     </tr>
-                    <?php
-                        }
-                    } else {
-                        echo "<tr><td colspan='5' style='text-align:center; padding:30px; color:#64748b;'>🔔 No notifications found.</td></tr>";
-                    }
-                    ?>
+                    <?php } ?>
                 </tbody>
             </table>
         </div>
     </div>
-</div>
-
-<script>
-async function handleNotification(notifId, actionType) {
-    if (actionType === 'DELETE' && !confirm("Are you sure?")) return;
-    const requestBody = new FormData();
-    requestBody.append('notification_action', '1');
-    requestBody.append('notif_id', notifId);
-    requestBody.append('action_type', actionType);
-
-    try {
-        const response = await fetch(window.location.href, { method: 'POST', body: requestBody });
-        const result = await response.json();
-        if (result.status === 'success') window.location.reload();
-    } catch (error) { alert("Error updating notification."); }
-}
-</script>
+    <script>
+        function dismiss(id) {
+            document.getElementById('row-'+id).style.opacity = '0.3';
+        }
+    </script>
 </body>
 </html>
