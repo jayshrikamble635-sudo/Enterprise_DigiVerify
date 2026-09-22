@@ -30,7 +30,8 @@ if (isset($_POST['admin_login'])) {
         .login-box { width: 400px; background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,.3); box-sizing: border-box; }
         .login-box h2 { text-align: center; margin-bottom: 30px; color: #1e3a8a; font-weight: bold; }
         label { font-size: 14px; color: #475569; font-weight: 600; display: block; margin-bottom: 5px; }
-        input { width: 100%; padding: 12px; margin-bottom: 20px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 15px; box-sizing: border-box; }
+        input { width: 100%; padding: 12px; margin-bottom: 20px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 15px; box-sizing: border-box; outline: none; }
+        input:focus { border-color: #1e3a8a; }
         button { width: 100%; padding: 14px; background: #1e3a8a; border: none; color: white; font-size: 16px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; }
         button:hover { background: #172554; }
         .back-home { text-align: center; margin-top: 20px; }
@@ -41,12 +42,19 @@ if (isset($_POST['admin_login'])) {
     <div class="login-box">
         <h2>Admin Control Login</h2>
         
+        <!-- autocomplete="off" ब्राउज़र को पुराने रिकॉर्ड थोपने से रोकता है -->
         <form method="POST" autocomplete="off">
+            
+            <!-- क्रोम के ज़बरदस्ती ऑटो-फ़िल करने वाले सिस्टम को भटकाने के लिए डमी फ़ील्ड्स -->
+            <input type="text" name="fake_admin_user" style="display:none;" aria-hidden="true">
+            <input type="password" name="fake_admin_pass" style="display:none;" aria-hidden="true">
+
             <label>Admin Username / Email</label>
-            <input type="text" name="email" placeholder="Enter Admin Username" required>
+            <!-- autocomplete="new-password" सुनिश्चित करता है कि इनपुट बॉक्स साफ़ रहे -->
+            <input type="text" name="email" placeholder="Enter Admin Username" autocomplete="new-password" required>
 
             <label>Password</label>
-            <input type="password" name="password" placeholder="Enter Password" required>
+            <input type="password" name="password" placeholder="Enter Password" autocomplete="new-password" required>
 
             <button type="submit" name="admin_login">Login As Admin</button>
             
@@ -55,6 +63,5 @@ if (isset($_POST['admin_login'])) {
             </div>
         </form>
     </div>
-
 </body>
 </html>
