@@ -1,4 +1,16 @@
 <?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+// 🎯 College Presentation Dashboard Bypass
+$_SESSION['user_id'] = '1';
+$_SESSION['user_name'] = 'Riddhi Balaji Kamble';
+$_SESSION['user_email'] = 'riddhi@gmail.com';
+
+// एरर रिपोर्टिंग बंद ताकि डेटाबेस न होने पर भी पेज क्रैश न हो
+error_reporting(0);
+ini_set('display_errors', 0);
+
 session_start();
 include("../database/config.php");
 
