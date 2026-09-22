@@ -105,7 +105,7 @@ $fraud_score = "6%";
                     <td><span class="badge badge-approved">APPROVED</span></td>
                     <td>Trusted Identity</td>
                     <td>2026-08-12</td>
-                    <td><a href="DigiVerify_Certificate_98.html" download class="btn-download">Get Certificate</a></td>
+                    <td><a href="../verify/verification_result.php?id=98" target="_blank" class="btn-download">Get Certificate</a></td>
                 </tr>
                 <tr>
                     <td>REF-5012</td>
@@ -115,7 +115,7 @@ $fraud_score = "6%";
                     <td><span class="badge badge-approved">APPROVED</span></td>
                     <td>Trusted Identity</td>
                     <td>2026-08-12</td>
-                    <td><a href="DigiVerify_Certificate_98.html" download class="btn-download">Get Certificate</a></td>
+                    <td><a href="../verify/verification_result.php?id=98" target="_blank" class="btn-download">Get Certificate</a></td>
                 </tr>
                 <tr>
                     <td>REF-5011</td>
@@ -127,6 +127,7 @@ $fraud_score = "6%";
                     <td>2026-08-12</td>
                     <td><span style="color: #64748b; font-size:12px;">Locked</span></td>
                 </tr>
+
                 <tr>
                     <td>REF-5010</td>
                     <td>AADHAAR CARD (UIDAI)</td>
@@ -135,7 +136,7 @@ $fraud_score = "6%";
                     <td><span class="badge badge-approved">APPROVED</span></td>
                     <td>Trusted Identity</td>
                     <td>2026-08-12</td>
-                    <td><a href="DigiVerify_Certificate_98.html" download class="btn-download">Get Certificate</a></td>
+                    <td><a href="../verify/verification_result.php?id=98" target="_blank" class="btn-download">Get Certificate</a></td>
                 </tr>
                 <tr>
                     <td>REF-5009</td>
@@ -145,7 +146,7 @@ $fraud_score = "6%";
                     <td><span class="badge badge-approved">APPROVED</span></td>
                     <td>Trusted Identity</td>
                     <td>2026-08-12</td>
-                    <td><a href="DigiVerify_Certificate_98.html" download class="btn-download">Get Certificate</a></td>
+                    <td><a href="../verify/verification_result.php?id=98" target="_blank" class="btn-download">Get Certificate</a></td>
                 </tr>
                 <tr>
                     <td>REF-5008</td>
@@ -155,7 +156,7 @@ $fraud_score = "6%";
                     <td><span class="badge badge-approved">APPROVED</span></td>
                     <td>Trusted Identity</td>
                     <td>2026-08-12</td>
-                    <td><a href="DigiVerify_Certificate_98.html" download class="btn-download">Get Certificate</a></td>
+                    <td><a href="../verify/verification_result.php?id=98" target="_blank" class="btn-download">Get Certificate</a></td>
                 </tr>
                 <tr>
                     <td>REF-5007</td>
@@ -185,7 +186,7 @@ $fraud_score = "6%";
                     <td><span class="badge badge-approved">APPROVED</span></td>
                     <td>Trusted Identity</td>
                     <td>2026-08-12</td>
-                    <td><a href="DigiVerify_Certificate_98.html" download class="btn-download">Get Certificate</a></td>
+                    <td><a href="../verify/verification_result.php?id=98" target="_blank" class="btn-download">Get Certificate</a></td>
                 </tr>
                 <tr>
                     <td>REF-5004</td>
@@ -195,7 +196,7 @@ $fraud_score = "6%";
                     <td><span class="badge badge-approved">APPROVED</span></td>
                     <td>Trusted Identity</td>
                     <td>2026-08-12</td>
-                    <td><a href="DigiVerify_Certificate_98.html" download class="btn-download">Get Certificate</a></td>
+                    <td><a href="../verify/verification_result.php?id=98" target="_blank" class="btn-download">Get Certificate</a></td>
                 </tr>
                 <tr>
                     <td>REF-5003</td>
@@ -215,7 +216,7 @@ $fraud_score = "6%";
                     <td><span class="badge badge-approved">APPROVED</span></td>
                     <td>Trusted Identity</td>
                     <td>2026-08-12</td>
-                    <td><a href="DigiVerify_Certificate_98.html" download class="btn-download">Get Certificate</a></td>
+                    <td><a href="../verify/verification_result.php?id=98" target="_blank" class="btn-download">Get Certificate</a></td>
                 </tr>
             </tbody>
         </table>
