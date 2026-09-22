@@ -28,7 +28,7 @@ ini_set('display_errors', 0);
         .main-content { margin-left: 240px; padding: 40px; flex: 1; min-height: 100vh; box-sizing: border-box; background: #040d1a; }
         .top-badge { background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; color: #10b981; font-size: 11px; font-weight: bold; padding: 4px 12px; border-radius: 20px; display: inline-block; margin-bottom: 15px; }
         .welcome-title { font-size: 28px; font-weight: bold; margin: 0 0 5px 0; text-align: left; }
-        .welcome-sub { font-size: 14px; color: #64748b; margin-0 0 30px 0; text-align: left; margin-bottom: 30px; }
+        .welcome-sub { font-size: 14px; color: #64748b; margin-bottom: 30px; text-align: left; }
         .desc-box { background: rgba(11, 21, 40, 0.4); border: 1px solid #102a45; border-radius: 12px; padding: 20px; font-size: 14px; color: #94a3b8; line-height: 1.6; text-align: left; margin-bottom: 35px; }
         /* काउंटर्स ग्रिड स्टाइल */
         .counters-wrapper { display: flex; gap: 20px; margin-bottom: 40px; flex-wrap: wrap; }
@@ -64,12 +64,12 @@ ini_set('display_errors', 0);
         <div class="logo-area">DigiVerify</div>
         <div class="logo-sub">ADMIN EDGE</div>
         <div class="menu-title">Main Menu</div>
-        <a href="#" class="menu-item active">Dashboard</a>
-        <a href="#" class="menu-item">Documents</a>
-        <a href="#" class="menu-item">Verify Documents</a>
-        <a href="#" class="menu-item">Users</a>
-        <a href="#" class="menu-item">Notifications</a>
-        <a href="#" class="menu-item">Profile</a>
+        <a href="dashboard.php" class="menu-item active">Dashboard</a>
+        <a href="dashboard.php" class="menu-item">Documents</a>
+        <a href="dashboard.php" class="menu-item">Verify Documents</a>
+        <a href="dashboard.php" class="menu-item">Users</a>
+        <a href="dashboard.php" class="menu-item">Notifications</a>
+        <a href="login.php" class="menu-item" style="color: #ef4444; border-top: 1px solid #102a45; margin-top: 20px; padding-top: 15px;">Admin Logout</a>
     </div>
 
     <!-- MAIN DASHBOARD CONTENT AREA -->
