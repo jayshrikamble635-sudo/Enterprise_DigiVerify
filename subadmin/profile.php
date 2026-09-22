@@ -1,152 +1,80 @@
 <?php
-session_start();
-include("../database/config.php");
-
-// यदि सब-एडमिन लॉग इन नहीं है तो उसे लॉगिन पेज पर भेजें
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 if(!isset($_SESSION['subadmin_id'])){
     header("Location: login.php");
     exit();
-}
-
-// वर्तमान में लॉग इन सब-एडमिन की ID निकालना
-$subadmin_id = intval($_SESSION['subadmin_id']);
-
-// डेटाबेस की 'subadmins' टेबल से विशिष्ट सब-एडमिन का डेटा निकालना
-$query = "SELECT id, fullname, email, created_at FROM subadmins WHERE id = $subadmin_id LIMIT 1";
-$result = mysqli_query($conn, $query);
-
-if(mysqli_num_rows($result) > 0) {
-    $admin_data = mysqli_fetch_assoc($result);
-} else {
-    // अगर डेटाबेस में आईडी न मिले तो फॉलबैक डेटा
-    $admin_data = [
-        'fullname' => 'Sub Administrator',
-        'email' => 'subadmin@digiverify.com',
-        'created_at' => date('Y-m-d H:i:s')
-    ];
 }
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1.0">
-    <title>My Profile | DigiVerify Sub Admin</title>
-    <link rel="stylesheet" href="../admin/css/admin.css">
-    <link rel="stylesheet" href="https://cloudflare.com">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DigiVerify Sub-Admin - Profile</title>
     <style>
-        /* प्रोफाइल व्यू विशेष स्टाइल */
-        .profile-container {
-            background: #0b1528;
-            border: 1px solid #1e293b;
-            border-radius: 12px;
-            padding: 40px;
-            max-width: 600px;
-            margin: 20px auto;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-        }
-        .profile-header-card {
-            display: flex;
-            align-items: center;
-            gap: 25px;
-            border-bottom: 1px solid #1e293b;
-            padding-bottom: 25px;
-            margin-bottom: 30px;
-        }
-        .profile-avatar {
-            background: #1e293b;
-            color: #3b82f6;
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 2px solid #3b82f6;
-        }
-        .profile-title-block h2 { margin: 0; font-size: 22px; color: #fff; }
-        .profile-title-block p { margin: 5px 0 0 0; color: #64748b; font-size: 14px; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #040d1a; color: #fff; margin: 0; padding: 0; display: flex; }
+        .sidebar { width: 240px; background: #081225; height: 100vh; padding: 30px 20px; box-sizing: border-box; position: fixed; border-right: 1px solid #102a45; }
+        .logo-area { font-size: 24px; font-weight: bold; color: #fff; margin-bottom: 5px; }
+        .logo-sub { font-size: 11px; color: #00d2ff; font-weight: bold; letter-spacing: 1px; margin-bottom: 40px; }
+        .menu-title { font-size: 11px; color: #475569; text-transform: uppercase; font-weight: bold; margin-bottom: 15px; }
+        .menu-item { display: block; padding: 12px 15px; color: #94a3b8; text-decoration: none; border-radius: 8px; font-size: 14px; margin-bottom: 8px; }
+        .menu-item.active { background: #1e293b; color: #00d2ff; font-weight: 600; }
+        .menu-item:hover { background: rgba(30, 41, 59, 0.5); color: #fff; }
         
-        .info-grid { display: flex; flex-direction: column; gap: 20px; }
-        .info-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
-        .info-label { color: #94a3b8; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
-        .info-value { color: #fff; font-size: 15px; font-weight: bold; }
+        .main-content { margin-left: 240px; padding: 40px; flex: 1; min-height: 100vh; box-sizing: border-box; background: #040d1a; }
+        .top-badge { background: rgba(56, 189, 248, 0.1); border: 1px solid #38bdf8; color: #38bdf8; font-size: 11px; font-weight: bold; padding: 4px 12px; border-radius: 20px; display: inline-block; margin-bottom: 15px; }
+        .welcome-title { font-size: 28px; font-weight: bold; margin: 0 0 5px 0; }
+        .welcome-sub { font-size: 14px; color: #64748b; margin-bottom: 30px; }
+        
+        .profile-card { background: rgba(11, 21, 40, 0.6); border: 1px solid #102a45; border-radius: 12px; padding: 35px; max-width: 650px; box-shadow: 0 8px 25px rgba(0,0,0,0.5); }
+        .profile-row { display: flex; justify-content: space-between; padding: 15px 0; border-bottom: 1px solid #102a45; font-size: 15px; }
+        .profile-row:last-child { border: none; }
+        .label-text { color: #475569; font-weight: bold; text-transform: uppercase; font-size: 12px; letter-spacing: 0.5px; }
+        .value-text { color: #cbd5e1; font-weight: 500; }
     </style>
 </head>
 <body>
+    <div class="sidebar">
+        <div class="logo-area">DigiVerify</div>
+        <div class="logo-sub">SUB-ADMIN CORE</div>
+        <div class="menu-title">Main Menu</div>
+        <a href="dashboard.php" class="menu-item">Dashboard</a>
+        <a href="documents.php" class="menu-item">Documents</a>
+        <a href="verify.php" class="menu-item">Verify Documents</a>
+        <a href="notifications.php" class="menu-item">Notifications</a>
+        <a href="profile.php" class="menu-item active">Profile</a>
+        <a href="logout.php" class="menu-item" style="color: #ef4444; border-top: 1px solid #102a45; margin-top: 20px; padding-top: 15px;">Sub-Admin Logout</a>
+    </div>
 
-<?php include("includes/sidebar.php"); ?>
+    <div class="main-content">
+        <div class="top-badge">Identity Node</div>
+        <div class="welcome-title">Sub Administrator Profile</div>
+        <div class="welcome-sub">Active cryptographic credentials and console parameters.</div>
 
-<div class="main-content">
-    <div class="top-header">
-        <div class="header-left">
-            <h1>Sub Admin Panel</h1>
-            <p>My Profile &bull; Sub Administrator Details</p>
-        </div>
-        <div class="header-right">
-            <div class="admin-profile">
-                <div class="profile-icon">
-                    <i class="fas fa-user-shield"></i>
-                </div>
-                <div>
-                    <h4>Sub Admin</h4>
-                    <span>Enterprise DigiVerify</span>
-                </div>
+        <div class="profile-card">
+            <div class="profile-row">
+                <span class="label-text">Assigned UID</span>
+                <span class="value-text" style="color: #00d2ff;">#SUB-NODE-2026</span>
+            </div>
+            <div class="profile-row">
+                <span class="label-text">Official Name</span>
+                <span class="value-text"><?php echo htmlspecialchars($_SESSION['subadmin_name'] ?? 'Sub Administrator'); ?></span>
+            </div>
+            <div class="profile-row">
+                <span class="label-text">Secure Email Endpoint</span>
+                <span class="value-text"><?php echo htmlspecialchars($_SESSION['subadmin_email'] ?? 'subadmin@digiverify.live'); ?></span>
+            </div>
+            <div class="profile-row">
+                <span class="label-text">Node Privilege Role</span>
+                <span class="value-text" style="color: #34d399;">Compliance Inspector</span>
+            </div>
+            <div class="profile-row">
+                <span class="label-text">Global Sync Cluster</span>
+                <span class="value-text">Enterprise DigiVerify Cluster Node 1</span>
             </div>
         </div>
     </div>
-    <!-- PROFILE BOX MODULE -->
-    <div class="table-card" style="padding: 20px;">
-        <div class="table-header" style="margin-bottom: 20px;">
-            <h3>Profile Information</h3>
-        </div>
-
-        <div class="profile-container">
-            <div class="profile-header-card">
-                <div class="profile-avatar">
-                    <i class="fas fa-user-gear fa-3x"></i>
-                </div>
-                <div class="profile-title-block">
-                    <h2><?php echo htmlspecialchars($admin_data['fullname']); ?></h2>
-                    <p>Sub Administrator &bull; Enterprise Security Portal</p>
-                </div>
-            </div>
-
-            <div class="info-grid">
-                <div class="info-row">
-                    <span class="info-label"><i class="fas fa-fingerprint" style="color: #3b82f6;"></i> Account ID</span>
-                    <span class="info-value">#<?php echo $subadmin_id; ?></span>
-                </div>
-
-                <div class="info-row">
-                    <span class="info-label"><i class="fas fa-signature" style="color: #3b82f6;"></i> Full Name</span>
-                    <span class="info-value"><?php echo htmlspecialchars($admin_data['fullname']); ?></span>
-                </div>
-
-                <div class="info-row">
-                    <span class="info-label"><i class="fas fa-envelope" style="color: #3b82f6;"></i> Email Address</span>
-                    <span class="info-value"><?php echo htmlspecialchars($admin_data['email']); ?></span>
-                </div>
-
-                <div class="info-row">
-                    <span class="info-label"><i class="fas fa-building-shield" style="color: #3b82f6;"></i> Organization Unit</span>
-                    <span class="info-value" style="color: #3b82f6;">Enterprise DigiVerify</span>
-                </div>
-
-                <div class="info-row">
-                    <span class="info-label"><i class="fas fa-calendar-alt" style="color: #3b82f6;"></i> Created At</span>
-                    <span class="info-value"><?php echo date("Y-m-d H:i", strtotime($admin_data['created_at'])); ?></span>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="dashboard-footer">
-        <p>
-            © <?php echo date("Y"); ?> Enterprise DigiVerify | Profile Panel | Developed by Riddhi Kamble
-        </p>
-    </div>
-</div>
-
 </body>
 </html>
