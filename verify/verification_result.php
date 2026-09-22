@@ -143,23 +143,6 @@ if ($status_param === 'approved' || $status_param === 'rakesh' || strpos($check_
         <div class="tech-divider">Tesseract OCR Raw Log Output Stream</div>
         <div class="ocr-terminal"><?php echo htmlspecialchars($raw_terminal_output); ?></div>
         <div style="width: 100%;">
-            <form method="POST" action="">
-                <input type="hidden" name="action_submit" value="1">
-                <input type="hidden" name="v_id" value="<?php echo htmlspecialchars($verification_id); ?>">
-                <input type="hidden" name="extracted_name" value="<?php echo htmlspecialchars($user_name); ?>">
-                <input type="hidden" name="doc_type" value="<?php echo htmlspecialchars($document_type); ?>">
-
-                <?php if ($verification_status == "APPROVED"): ?>
-                    <button type="submit" name="status" value="APPROVED" class="btn-action btn-approved">
-                        Approve & Continue
-                    </button>
-                <?php else: ?>
-                    <button type="submit" name="status" value="REJECTED" class="btn-action btn-rejected">
-                        Log Rejection & Close
-                    </button>
-                <?php endif; ?>
-            </form>
-
             <a href="../dashboard.php" class="btn-home">
                 Back to Home
             </a>
