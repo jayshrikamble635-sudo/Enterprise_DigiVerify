@@ -1,6 +1,7 @@
 <?php
+
 error_reporting(E_ALL);
-ini_set('display_errors', 1);
+ini_set('display_errors', '1');
 
 mysqli_report(MYSQLI_REPORT_OFF);
 
@@ -8,395 +9,343 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-/*
-|--------------------------------------------------------------------------
-| DATABASE CONFIGURATION
-|--------------------------------------------------------------------------
-*/
 
-$config_paths = [
-    __DIR__ . "/../database/config.php",
-    dirname(__DIR__) . "/database/config.php"
-];
+/* =========================================================
+   DATABASE CONFIG
+   ========================================================= */
 
-$config_loaded = false;
+$configFile = dirname(__DIR__) . "/database/config.php";
 
-foreach ($config_paths as $config_path) {
-    if (file_exists($config_path)) {
-        require_once $config_path;
-        $config_loaded = true;
-        break;
-    }
+if (!file_exists($configFile)) {
+    die("ERROR: database/config.php not found.");
 }
 
-/*
-|--------------------------------------------------------------------------
-| DEFAULT VALUES
-|--------------------------------------------------------------------------
-*/
-
-$verification_id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
-
-$db_status       = "REJECTED";
-$db_fraud        = 90;
-$db_confidence   = 15;
-$db_remarks      = "No verification record found.";
-$db_number       = "Not Extracted";
-$db_type         = "UNKNOWN DOCUMENT";
-$db_date         = date("Y-m-d H:i:s");
-$display_name    = "UNKNOWN USER";
-$user_email      = "user@digiverify.live";
-
-$verification_status = "REJECTED";
-
-$user_name      = "UNKNOWN USER";
-$document_type  = "UNKNOWN DOCUMENT";
-$extracted_uid  = "Not Extracted";
-$ocr_score      = "0%";
-$face_match     = "0%";
-
-$status_message = "Verification record could not be loaded.";
-$statusColor    = "#dc2626";
-$statusIcon     = "✕";
-
-$raw_terminal_output =
-"ENTERPRISE DIGIVERIFY
---------------------------------
-Verification ID: " . $verification_id . "
-Database Status: RECORD NOT FOUND
-Security Status: REJECTED
---------------------------------
-[WARNING]: Verification record unavailable.";
-
-
-/*
-|--------------------------------------------------------------------------
-| FETCH DATABASE RECORD
-|--------------------------------------------------------------------------
-*/
-
-if (
-    $verification_id > 0 &&
-    isset($conn) &&
-    $conn instanceof mysqli &&
-    !$conn->connect_error
-) {
-
-    $sql = "
-        SELECT 
-            d.*,
-            u.fullname AS user_fullname,
-            u.email AS user_email_address
-        FROM documents d
-        LEFT JOIN users u 
-            ON d.user_id = u.id
-        WHERE d.id = ?
-        LIMIT 1
-    ";
-
-    $stmt = mysqli_prepare($conn, $sql);
-
-    if ($stmt) {
-
-        mysqli_stmt_bind_param($stmt, "i", $verification_id);
-        mysqli_stmt_execute($stmt);
-
-        $result = mysqli_stmt_get_result($stmt);
-
-        if ($result && mysqli_num_rows($result) > 0) {
-
-            $row = mysqli_fetch_assoc($result);
-
-            /*
-            |--------------------------------------------------------------------------
-            | DATABASE VALUES
-            |--------------------------------------------------------------------------
-            */
-
-            $db_status = trim($row['verification_status'] ?? 'PENDING');
-
-            $db_fraud = isset($row['fraud_score'])
-                ? (float) $row['fraud_score']
-                : 0;
-
-            $db_confidence = isset($row['ai_confidence'])
-                ? (float) $row['ai_confidence']
-                : 0;
-
-            $db_remarks = !empty($row['remarks'])
-                ? $row['remarks']
-                : "No remarks available.";
-
-            $db_number = !empty($row['extracted_document_number'])
-                ? $row['extracted_document_number']
-                : "Not Extracted";
+require_once $configFile;
 
-            $db_type = !empty($row['document_type'])
-                ? $row['document_type']
-                : "Unknown Document";
 
-            $db_date = !empty($row['uploaded_at'])
-                ? $row['uploaded_at']
-                : date("Y-m-d H:i:s");
+/* =========================================================
+   DATABASE CONNECTION CHECK
+   ========================================================= */
 
-            $display_name = !empty($row['user_fullname'])
-                ? $row['user_fullname']
-                : "UNKNOWN USER";
+if (!isset($conn) || !($conn instanceof mysqli)) {
+    die("ERROR: Database connection \$conn not available.");
+}
 
-            $user_email = !empty($row['user_email_address'])
-                ? $row['user_email_address']
-                : "user@digiverify.live";
+if ($conn->connect_error) {
+    die(
+        "ERROR: Database connection failed: " .
+        htmlspecialchars($conn->connect_error)
+    );
+}
 
-            /*
-            |--------------------------------------------------------------------------
-            | DISPLAY VALUES
-            |--------------------------------------------------------------------------
-            */
 
-            $user_name = $display_name;
+/* =========================================================
+   GET VERIFICATION ID
+   ========================================================= */
 
-            $document_type = strtoupper($db_type);
+$verification_id = isset($_GET['id'])
+    ? (int) $_GET['id']
+    : 0;
 
-            $extracted_uid = $db_number;
+if ($verification_id <= 0) {
+    die("ERROR: Invalid verification ID.");
+}
 
-            $ocr_score = number_format($db_confidence, 1) . "%";
 
-            /*
-            |--------------------------------------------------------------------------
-            | FACE MATCH
-            |--------------------------------------------------------------------------
-            |
-            | If your database has face_match_score column, use it.
-            | Otherwise use AI confidence as fallback.
-            |
-            */
+/* =========================================================
+   DEFAULT VALUES
+   ========================================================= */
 
-            if (isset($row['face_match_score'])) {
+$status = "PENDING";
 
-                $face_match = number_format(
-                    (float) $row['face_match_score'],
-                    1
-                ) . "%";
+$fraud_score = 0;
 
-            } elseif (isset($row['face_match'])) {
+$ai_confidence = 0;
 
-                $face_match = number_format(
-                    (float) $row['face_match'],
-                    1
-                ) . "%";
+$document_type = "UNKNOWN DOCUMENT";
 
-            } else {
+$document_number = "Not Extracted";
 
-                $face_match = number_format(
-                    $db_confidence,
-                    1
-                ) . "%";
-            }
+$user_name = "Unknown User";
 
+$user_email = "Not Available";
 
-            /*
-            |--------------------------------------------------------------------------
-            | NORMALIZE STATUS
-            |--------------------------------------------------------------------------
-            */
+$remarks = "No verification remarks available.";
 
-            $normalized_status = strtolower(trim($db_status));
+$uploaded_at = "Not Available";
 
+$qr_status = "Not Checked";
 
-            /*
-            |--------------------------------------------------------------------------
-            | APPROVED
-            |--------------------------------------------------------------------------
-            */
+$face_match = 0;
 
-            if (
-                $normalized_status === "approved" &&
-                $db_fraud < 60
-            ) {
 
-                $verification_status = "APPROVED";
+/* =========================================================
+   FETCH DOCUMENT
+   ========================================================= */
 
-                $statusColor = "#22c55e";
+$sql = "
+    SELECT
+        d.*,
+        u.fullname AS user_fullname,
+        u.email AS user_email_address
+    FROM documents d
+    LEFT JOIN users u
+        ON d.user_id = u.id
+    WHERE d.id = ?
+    LIMIT 1
+";
 
-                $statusIcon = "✓";
+$stmt = mysqli_prepare($conn, $sql);
 
-                $status_message =
-                    "VERIFIED: Document passed the configured DigiVerify validation checks.";
+if (!$stmt) {
+    die(
+        "ERROR: Database query could not be prepared: " .
+        htmlspecialchars(mysqli_error($conn))
+    );
+}
 
-                $raw_terminal_output =
-                    "ENTERPRISE DIGIVERIFY
---------------------------------
-Verification ID: DV" .
-                    str_pad($verification_id, 6, "0", STR_PAD_LEFT) . "
-Document Type: " . strtoupper($db_type) . "
-OCR Confidence: " . number_format($db_confidence, 1) . "%
-Fraud Score: " . number_format($db_fraud, 1) . "
---------------------------------
-[OK]: OCR DATA PROCESSED
-[OK]: DOCUMENT VALIDATION PASSED
-[OK]: FRAUD SCORE WITHIN ACCEPTABLE RANGE
-STATUS: APPROVED";
+mysqli_stmt_bind_param(
+    $stmt,
+    "i",
+    $verification_id
+);
 
-            }
+if (!mysqli_stmt_execute($stmt)) {
+    die(
+        "ERROR: Database query failed: " .
+        htmlspecialchars(mysqli_stmt_error($stmt))
+    );
+}
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | REJECTED
-            |--------------------------------------------------------------------------
-            */
+/* =========================================================
+   MYSQLND-SAFE RESULT FETCH
+   ========================================================= */
 
-            elseif (
-                $normalized_status === "rejected" ||
-                $db_fraud >= 60
-            ) {
+$result = mysqli_stmt_get_result($stmt);
 
-                $verification_status = "REJECTED";
+if (!$result) {
 
-                $statusColor = "#ef4444";
+    /*
+     * Fallback for servers where mysqlnd is unavailable.
+     */
 
-                $statusIcon = "✕";
+    $meta = mysqli_stmt_result_metadata($stmt);
 
-                if ($db_fraud >= 60) {
-
-                    $status_message =
-                        "FAILED / REJECTED: High-risk document detected by the configured security validation.";
-
-                } else {
-
-                    $status_message =
-                        "FAILED / REJECTED: Document did not pass the configured verification checks.";
-                }
-
-                $raw_terminal_output =
-                    "ENTERPRISE DIGIVERIFY
---------------------------------
-Verification ID: DV" .
-                    str_pad($verification_id, 6, "0", STR_PAD_LEFT) . "
-Document Type: " . strtoupper($db_type) . "
-OCR Confidence: " . number_format($db_confidence, 1) . "%
-Fraud Score: " . number_format($db_fraud, 1) . "
---------------------------------
-[WARNING]: SECURITY VALIDATION FAILED
-[WARNING]: DOCUMENT MARKED AS HIGH RISK
-STATUS: REJECTED";
-
-            }
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | PENDING
-            |--------------------------------------------------------------------------
-            */
-
-            else {
-
-                $verification_status = "PENDING";
-
-                $statusColor = "#f59e0b";
-
-                $statusIcon = "…";
-
-                $status_message =
-                    "PROCESSING: Document verification is currently pending.";
-
-                $raw_terminal_output =
-                    "ENTERPRISE DIGIVERIFY
---------------------------------
-Verification ID: DV" .
-                    str_pad($verification_id, 6, "0", STR_PAD_LEFT) . "
-Document Type: " . strtoupper($db_type) . "
-OCR Confidence: " . number_format($db_confidence, 1) . "%
-Fraud Score: " . number_format($db_fraud, 1) . "
---------------------------------
-[INFO]: DOCUMENT RECEIVED
-[INFO]: VALIDATION IN PROGRESS
-STATUS: PENDING";
-            }
-
-        } else {
-
-            /*
-            |--------------------------------------------------------------------------
-            | RECORD NOT FOUND
-            |--------------------------------------------------------------------------
-            */
-
-            $verification_status = "REJECTED";
-
-            $statusColor = "#ef4444";
-
-            $statusIcon = "✕";
-
-            $status_message =
-                "Verification record #" . $verification_id . " was not found.";
-
-            $raw_terminal_output =
-                "ENTERPRISE DIGIVERIFY
---------------------------------
-Verification ID: " . $verification_id . "
-[ERROR]: DATABASE RECORD NOT FOUND
-STATUS: REJECTED";
-        }
-
-        mysqli_stmt_close($stmt);
-
-    } else {
-
-        $status_message =
-            "Unable to prepare database verification query.";
-
-        $raw_terminal_output =
-            "ENTERPRISE DIGIVERIFY
---------------------------------
-[DATABASE ERROR]: Query preparation failed
-STATUS: REJECTED";
+    if (!$meta) {
+        die("ERROR: Unable to read database result.");
     }
+
+    $fields = [];
+    $row = [];
+
+    while ($field = mysqli_fetch_field($meta)) {
+        $fields[] = $field->name;
+        $row[$field->name] = null;
+    }
+
+    $bind = [];
+
+    foreach ($fields as $fieldName) {
+        $bind[] = &$row[$fieldName];
+    }
+
+    mysqli_stmt_bind_result($stmt, ...$bind);
+
+    if (!mysqli_stmt_fetch($stmt)) {
+        die(
+            "Verification record #" .
+            $verification_id .
+            " was not found."
+        );
+    }
+
+    $data = $row;
 
 } else {
 
-    /*
-    |--------------------------------------------------------------------------
-    | DATABASE CONNECTION ERROR
-    |--------------------------------------------------------------------------
-    */
+    if (mysqli_num_rows($result) <= 0) {
+        die(
+            "Verification record #" .
+            $verification_id .
+            " was not found in database."
+        );
+    }
 
-    $status_message =
-        "Database connection is unavailable.";
+    $data = mysqli_fetch_assoc($result);
+}
 
-    $raw_terminal_output =
-        "ENTERPRISE DIGIVERIFY
---------------------------------
-[DATABASE ERROR]: Database connection unavailable
-STATUS: REJECTED";
+mysqli_stmt_close($stmt);
+
+
+/* =========================================================
+   READ DATABASE VALUES
+   ========================================================= */
+
+$status = strtoupper(
+    trim(
+        $data['verification_status'] ??
+        $data['status'] ??
+        'PENDING'
+    )
+);
+
+$fraud_score = isset($data['fraud_score'])
+    ? (float)$data['fraud_score']
+    : 0;
+
+$ai_confidence = isset($data['ai_confidence'])
+    ? (float)$data['ai_confidence']
+    : 0;
+
+$document_type = !empty($data['document_type'])
+    ? $data['document_type']
+    : "AADHAAR";
+
+$document_number = !empty($data['extracted_document_number'])
+    ? $data['extracted_document_number']
+    : "Not Extracted";
+
+$user_name = !empty($data['user_fullname'])
+    ? $data['user_fullname']
+    : (
+        !empty($data['fullname'])
+            ? $data['fullname']
+            : "Unknown User"
+    );
+
+$user_email = !empty($data['user_email_address'])
+    ? $data['user_email_address']
+    : (
+        !empty($data['email'])
+            ? $data['email']
+            : "Not Available"
+    );
+
+$remarks = !empty($data['remarks'])
+    ? $data['remarks']
+    : "No verification remarks available.";
+
+$uploaded_at = !empty($data['uploaded_at'])
+    ? $data['uploaded_at']
+    : "Not Available";
+
+
+/* =========================================================
+   FACE MATCH
+   ========================================================= */
+
+if (isset($data['face_match_score'])) {
+
+    $face_match = (float)$data['face_match_score'];
+
+} elseif (isset($data['face_match'])) {
+
+    $face_match = (float)$data['face_match'];
+
 }
 
 
-/*
-|--------------------------------------------------------------------------
-| VERIFICATION REFERENCE
-|--------------------------------------------------------------------------
-*/
+/* =========================================================
+   QR STATUS
+   ========================================================= */
 
-$reference = "DV" . str_pad(
-    $verification_id,
-    6,
-    "0",
-    STR_PAD_LEFT
-);
+if (isset($data['qr_verified'])) {
+
+    $qr_status = ((int)$data['qr_verified'] === 1)
+        ? "VERIFIED"
+        : "NOT VERIFIED";
+
+} elseif (isset($data['qr_status'])) {
+
+    $qr_status = strtoupper(
+        trim($data['qr_status'])
+    );
+
+}
 
 
-/*
-|--------------------------------------------------------------------------
-| HTML ESCAPE HELPER
-|--------------------------------------------------------------------------
-*/
+/* =========================================================
+   NORMALIZE STATUS
+   ========================================================= */
 
-function safe_html($value)
+if (
+    $status === "VERIFIED" ||
+    $status === "AUTHENTICATED"
+) {
+    $status = "APPROVED";
+}
+
+
+/* =========================================================
+   FINAL STATUS
+   ========================================================= */
+
+if ($status === "APPROVED") {
+
+    $statusColor = "#22c55e";
+
+    $statusIcon = "✓";
+
+    $statusTitle = "Document Authenticated";
+
+    $statusMessage =
+        "Document passed the verification checks recorded by DigiVerify.";
+
+    $statusClass = "approved";
+
+} elseif ($status === "REJECTED") {
+
+    $statusColor = "#ef4444";
+
+    $statusIcon = "✕";
+
+    $statusTitle = "Verification Rejected";
+
+    $statusMessage =
+        "Document failed the verification checks recorded by DigiVerify.";
+
+    $statusClass = "rejected";
+
+} else {
+
+    $status = "PENDING";
+
+    $statusColor = "#f59e0b";
+
+    $statusIcon = "…";
+
+    $statusTitle = "Verification Pending";
+
+    $statusMessage =
+        "Document verification is still pending.";
+
+    $statusClass = "pending";
+}
+
+
+/* =========================================================
+   REFERENCE
+   ========================================================= */
+
+$reference =
+    "DV" .
+    str_pad(
+        $verification_id,
+        6,
+        "0",
+        STR_PAD_LEFT
+    );
+
+
+/* =========================================================
+   SAFE HTML
+   ========================================================= */
+
+function h($value)
 {
     return htmlspecialchars(
-        (string) $value,
+        (string)$value,
         ENT_QUOTES,
         'UTF-8'
     );
@@ -409,545 +358,592 @@ function safe_html($value)
 
 <head>
 
-    <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
-    <title>
-        DigiVerify - Verification Result
-    </title>
-
-    <style>
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background:
-                radial-gradient(
-                    circle at top,
-                    #10284a 0%,
-                    #040d1a 45%,
-                    #020711 100%
-                );
-            color: #ffffff;
-            min-height: 100vh;
-            padding: 40px 20px;
-            overflow-y: auto;
-        }
-
-        .page-wrapper {
-            width: 100%;
-            max-width: 620px;
-            margin: auto;
-        }
-
-        .brand {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .brand-title {
-            font-size: 24px;
-            font-weight: 800;
-            letter-spacing: 1px;
-            color: #38bdf8;
-        }
-
-        .brand-subtitle {
-            margin-top: 5px;
-            color: #64748b;
-            font-size: 12px;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-        }
-
-        .result-card {
-            background:
-                linear-gradient(
-                    145deg,
-                    rgba(15, 23, 42, 0.98),
-                    rgba(7, 16, 31, 0.98)
-                );
-
-            border: 1px solid rgba(56, 189, 248, 0.20);
-
-            border-radius: 24px;
-
-            padding: 35px;
-
-            width: 100%;
-
-            box-shadow:
-                0 25px 60px rgba(0, 0, 0, 0.70),
-                0 0 40px rgba(14, 165, 233, 0.06);
-        }
-
-        .icon-box {
-            width: 76px;
-            height: 76px;
-
-            border-radius: 50%;
-
-            display: flex;
-            align-items: center;
-            justify-content: center;
-
-            margin: 0 auto 20px auto;
+<meta charset="UTF-8">
 
-            background: rgba(255, 255, 255, 0.03);
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+>
 
-            box-shadow:
-                0 0 30px rgba(56, 189, 248, 0.08);
-        }
+<title>
+    DigiVerify - Verification Result
+</title>
 
-        .icon {
-            font-size: 34px;
-            font-weight: 900;
-        }
+<style>
 
-        .result-card h1 {
-            font-size: 27px;
-            font-weight: 800;
-            text-align: center;
-            margin-bottom: 10px;
-        }
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
 
-        .reference {
-            text-align: center;
-            color: #64748b;
-            font-family: monospace;
-            font-size: 12px;
-            margin-bottom: 20px;
-        }
+body {
 
-        .status-text {
-            text-align: center;
+    min-height: 100vh;
 
-            font-weight: 700;
+    padding: 35px 15px;
 
-            font-size: 13px;
+    font-family:
+        "Segoe UI",
+        Arial,
+        sans-serif;
 
-            margin-bottom: 25px;
+    color: white;
 
-            padding: 12px 14px;
+    background:
+        radial-gradient(
+            circle at top,
+            #12325a 0%,
+            #071426 40%,
+            #020712 100%
+        );
+}
 
-            border-radius: 8px;
+.container {
 
-            font-family: monospace;
+    width: 100%;
 
-            line-height: 1.6;
-        }
+    max-width: 620px;
 
-        .text-approved {
-            color: #4ade80;
-            background: rgba(34, 197, 94, 0.10);
-            border: 1px solid rgba(34, 197, 94, 0.25);
-        }
+    margin: auto;
+}
 
-        .text-rejected {
-            color: #fca5a5;
-            background: rgba(239, 68, 68, 0.10);
-            border: 1px solid rgba(239, 68, 68, 0.25);
-        }
+.header {
 
-        .text-pending {
-            color: #fbbf24;
-            background: rgba(245, 158, 11, 0.10);
-            border: 1px solid rgba(245, 158, 11, 0.25);
-        }
+    text-align: center;
 
-        .tech-divider {
-            font-size: 11px;
-            font-family: monospace;
-            color: #38bdf8;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 12px;
-            text-align: left;
-        }
+    margin-bottom: 22px;
+}
 
-        .info-table {
-            background: rgba(19, 29, 52, 0.70);
+.logo {
 
-            border: 1px solid rgba(255, 255, 255, 0.04);
+    font-size: 25px;
 
-            border-radius: 14px;
+    font-weight: 900;
 
-            padding: 18px;
+    letter-spacing: 1.5px;
 
-            margin-bottom: 22px;
-        }
+    color: #38bdf8;
+}
 
-        .info-row {
-            display: flex;
+.subtitle {
 
-            justify-content: space-between;
+    color: #64748b;
 
-            align-items: center;
+    margin-top: 5px;
 
-            gap: 20px;
+    font-size: 11px;
 
-            padding: 12px 0;
+    letter-spacing: 2px;
 
-            border-bottom:
-                1px solid rgba(255, 255, 255, 0.04);
+    text-transform: uppercase;
+}
 
-            font-size: 14px;
-        }
+.card {
 
-        .info-row:last-child {
-            border-bottom: none;
-        }
+    background:
+        linear-gradient(
+            145deg,
+            #0f172a,
+            #07111f
+        );
 
-        .info-label {
-            color: #64748b;
-            font-weight: 600;
-        }
+    border:
 
-        .info-value {
-            color: #ffffff;
-            font-weight: 700;
-            text-align: right;
-            word-break: break-word;
-        }
+        1px solid
+        rgba(56,189,248,.20);
 
-        .ocr-value {
-            font-family: monospace;
+    border-radius: 24px;
 
-            padding: 5px 10px;
+    padding: 30px;
 
-            border-radius: 6px;
+    box-shadow:
+        0 30px 70px
+        rgba(0,0,0,.70);
+}
 
-            font-weight: 700;
+.status-icon {
 
-            text-align: right;
+    width: 78px;
 
-            word-break: break-word;
-        }
+    height: 78px;
 
-        .badge {
-            font-family: monospace;
-            padding: 5px 9px;
-            border-radius: 6px;
-            font-weight: 700;
-        }
+    margin: auto;
 
-        .ocr-terminal {
-            background: #020813;
+    border-radius: 50%;
 
-            border: 1px solid #102a45;
+    display: flex;
 
-            border-radius: 8px;
+    align-items: center;
 
-            padding: 15px;
+    justify-content: center;
 
-            font-family: 'Courier New', monospace;
+    font-size: 36px;
 
-            font-size: 11px;
+    font-weight: 900;
 
-            color: #34d399;
+    border:
+        2px solid
+        <?php echo h($statusColor); ?>;
 
-            text-align: left;
+    color:
+        <?php echo h($statusColor); ?>;
 
-            margin-bottom: 25px;
+    background:
+        rgba(255,255,255,.03);
 
-            white-space: pre-wrap;
+    box-shadow:
+        0 0 35px
+        <?php echo h($statusColor); ?>33;
+}
 
-            line-height: 1.5;
+h1 {
 
-            overflow-x: auto;
-        }
+    text-align: center;
 
-        .btn-home {
-            background: transparent;
+    margin-top: 18px;
 
-            color: #ffffff;
+    font-size: 27px;
 
-            border: 2px solid #38bdf8;
+    font-weight: 800;
 
-            padding: 14px;
+    color:
+        <?php echo h($statusColor); ?>;
+}
 
-            border-radius: 12px;
+.reference {
 
-            font-size: 16px;
+    text-align: center;
 
-            cursor: pointer;
+    margin-top: 8px;
 
-            font-weight: bold;
+    margin-bottom: 20px;
 
-            width: 100%;
+    color: #64748b;
 
-            transition: 0.3s;
+    font-family: monospace;
 
-            text-decoration: none;
+    font-size: 12px;
+}
 
-            display: block;
+.status {
 
-            text-align: center;
-        }
+    padding: 13px;
 
-        .btn-home:hover {
-            background: rgba(56, 189, 248, 0.10);
+    border-radius: 10px;
 
-            box-shadow:
-                0 0 20px rgba(56, 189, 248, 0.20);
-        }
+    text-align: center;
 
-        .footer {
-            text-align: center;
-            color: #475569;
-            font-size: 11px;
-            margin-top: 18px;
-        }
+    margin-bottom: 25px;
 
-        @media (max-width: 600px) {
+    font-size: 13px;
 
-            body {
-                padding: 20px 12px;
-            }
+    font-weight: 700;
 
-            .result-card {
-                padding: 24px 18px;
-            }
+    line-height: 1.5;
 
-            .info-row {
-                align-items: flex-start;
-            }
+    font-family: monospace;
+}
 
-            .info-value,
-            .ocr-value {
-                max-width: 55%;
-            }
+.status.approved {
 
-        }
+    color: #4ade80;
 
-    </style>
+    background:
+        rgba(34,197,94,.10);
+
+    border:
+        1px solid
+        rgba(34,197,94,.25);
+}
+
+.status.rejected {
+
+    color: #fca5a5;
+
+    background:
+        rgba(239,68,68,.10);
+
+    border:
+        1px solid
+        rgba(239,68,68,.25);
+}
+
+.status.pending {
+
+    color: #fbbf24;
+
+    background:
+        rgba(245,158,11,.10);
+
+    border:
+        1px solid
+        rgba(245,158,11,.25);
+}
+
+.section-title {
+
+    color: #38bdf8;
+
+    font-family: monospace;
+
+    font-size: 11px;
+
+    letter-spacing: 2px;
+
+    text-transform: uppercase;
+
+    margin-bottom: 10px;
+}
+
+.table {
+
+    background:
+        rgba(15,23,42,.80);
+
+    border:
+        1px solid
+        rgba(255,255,255,.05);
+
+    border-radius: 14px;
+
+    padding: 15px;
+
+    margin-bottom: 22px;
+}
+
+.row {
+
+    display: flex;
+
+    justify-content:
+        space-between;
+
+    align-items: center;
+
+    gap: 15px;
+
+    padding: 13px 0;
+
+    border-bottom:
+        1px solid
+        rgba(255,255,255,.05);
+}
+
+.row:last-child {
+    border-bottom: none;
+}
+
+.label {
+
+    color: #64748b;
+
+    font-size: 13px;
+
+    font-weight: 600;
+}
+
+.value {
+
+    text-align: right;
+
+    color: #f8fafc;
+
+    font-size: 13px;
+
+    font-weight: 700;
+
+    word-break: break-word;
+}
+
+.green {
+    color: #4ade80 !important;
+}
+
+.red {
+    color: #f87171 !important;
+}
+
+.yellow {
+    color: #fbbf24 !important;
+}
+
+.blue {
+    color: #38bdf8 !important;
+}
+
+.terminal {
+
+    background: #020812;
+
+    border:
+        1px solid
+        #12304d;
+
+    border-radius: 10px;
+
+    padding: 16px;
+
+    margin-bottom: 25px;
+
+    font-family:
+        "Courier New",
+        monospace;
+
+    font-size: 11px;
+
+    line-height: 1.6;
+
+    color: #34d399;
+
+    white-space: pre-wrap;
+
+    word-break: break-word;
+}
+
+.back {
+
+    display: block;
+
+    width: 100%;
+
+    text-align: center;
+
+    text-decoration: none;
+
+    padding: 14px;
+
+    border-radius: 12px;
+
+    border:
+        2px solid
+        #38bdf8;
+
+    color: white;
+
+    font-weight: 800;
+
+    transition: .25s;
+}
+
+.back:hover {
+
+    background:
+        rgba(56,189,248,.10);
+
+    box-shadow:
+        0 0 25px
+        rgba(56,189,248,.20);
+}
+
+.footer {
+
+    text-align: center;
+
+    margin-top: 18px;
+
+    color: #475569;
+
+    font-size: 11px;
+}
+
+@media(max-width:600px) {
+
+    .card {
+        padding: 22px 17px;
+    }
+
+    .row {
+        align-items: flex-start;
+    }
+
+    .value {
+        max-width: 55%;
+    }
+
+}
+
+</style>
 
 </head>
 
+
 <body>
 
-<div class="page-wrapper">
 
-    <div class="brand">
+<div class="container">
 
-        <div class="brand-title">
+
+    <div class="header">
+
+        <div class="logo">
             ENTERPRISE DIGIVERIFY
         </div>
 
-        <div class="brand-subtitle">
+        <div class="subtitle">
             AI Document Verification Platform
         </div>
 
     </div>
 
 
-    <div class="result-card">
+    <div class="card">
 
 
-        <!-- STATUS ICON -->
+        <!-- STATUS -->
 
-        <div
-            class="icon-box"
-            style="
-                border: 2px solid <?php echo safe_html($statusColor); ?>;
-                color: <?php echo safe_html($statusColor); ?>;
-            "
-        >
-
-            <span class="icon">
-                <?php echo safe_html($statusIcon); ?>
-            </span>
-
+        <div class="status-icon">
+            <?php echo h($statusIcon); ?>
         </div>
 
 
-        <!-- STATUS TITLE -->
+        <h1>
+            <?php echo h($statusTitle); ?>
+        </h1>
 
-        <?php if ($verification_status === "APPROVED"): ?>
-
-            <h1 style="color:#4ade80;">
-                Document Authenticated
-            </h1>
-
-        <?php elseif ($verification_status === "PENDING"): ?>
-
-            <h1 style="color:#fbbf24;">
-                Verification Pending
-            </h1>
-
-        <?php else: ?>
-
-            <h1 style="color:#f87171;">
-                Verification Rejected
-            </h1>
-
-        <?php endif; ?>
-
-
-        <!-- REFERENCE -->
 
         <div class="reference">
+
             Verification Reference:
-            <?php echo safe_html($reference); ?>
+            <?php echo h($reference); ?>
+
         </div>
 
 
-        <!-- STATUS MESSAGE -->
+        <div class="status <?php echo h($statusClass); ?>">
 
-        <?php if ($verification_status === "APPROVED"): ?>
+            <?php echo h($statusMessage); ?>
 
-            <div class="status-text text-approved">
-                <?php echo safe_html($status_message); ?>
-            </div>
-
-        <?php elseif ($verification_status === "PENDING"): ?>
-
-            <div class="status-text text-pending">
-                <?php echo safe_html($status_message); ?>
-            </div>
-
-        <?php else: ?>
-
-            <div class="status-text text-rejected">
-                <?php echo safe_html($status_message); ?>
-            </div>
-
-        <?php endif; ?>
-
-
-        <!-- OCR -->
-
-        <div class="tech-divider">
-            Layer 1: Extracted OCR Metrics
         </div>
 
 
-        <div class="info-table">
+        <!-- DOCUMENT INFORMATION -->
+
+        <div class="section-title">
+            Document Information
+        </div>
 
 
-            <!-- NAME -->
+        <div class="table">
 
-            <div class="info-row">
 
-                <span class="info-label">
+            <div class="row">
+
+                <span class="label">
+                    Verification ID
+                </span>
+
+                <span class="value blue">
+                    #<?php echo h($verification_id); ?>
+                </span>
+
+            </div>
+
+
+            <div class="row">
+
+                <span class="label">
                     Detected Name
                 </span>
 
-                <span
-                    class="ocr-value"
-                    style="
-                        background:
-                        <?php
-                        echo ($verification_status === 'APPROVED')
-                            ? 'rgba(16,185,129,0.10)'
-                            : 'rgba(239,68,68,0.10)';
-                        ?>;
-
-                        color:
-                        <?php
-                        echo ($verification_status === 'APPROVED')
-                            ? '#4ade80'
-                            : '#fca5a5';
-                        ?>;
-                    "
-                >
-
-                    <?php echo safe_html($user_name); ?>
-
+                <span class="value">
+                    <?php echo h($user_name); ?>
                 </span>
 
             </div>
 
 
-            <!-- DOCUMENT TYPE -->
+            <div class="row">
 
-            <div class="info-row">
-
-                <span class="info-label">
-                    Identified Card Type
+                <span class="label">
+                    Document Type
                 </span>
 
-                <span class="info-value">
-                    <?php echo safe_html($document_type); ?>
+                <span class="value">
+                    <?php echo h(strtoupper($document_type)); ?>
                 </span>
 
             </div>
 
 
-            <!-- DOCUMENT NUMBER -->
+            <div class="row">
 
-            <div class="info-row">
-
-                <span class="info-label">
+                <span class="label">
                     Document Number
                 </span>
 
-                <span class="info-value">
-                    <?php echo safe_html($extracted_uid); ?>
+                <span class="value">
+                    <?php echo h($document_number); ?>
                 </span>
 
             </div>
 
 
-            <!-- OCR CONFIDENCE -->
+            <div class="row">
 
-            <div class="info-row">
+                <span class="label">
+                    Uploaded At
+                </span>
 
-                <span class="info-label">
-                    OCR / AI Confidence
+                <span class="value">
+                    <?php echo h($uploaded_at); ?>
+                </span>
+
+            </div>
+
+
+        </div>
+
+
+        <!-- AI ANALYSIS -->
+
+        <div class="section-title">
+            AI Verification Analysis
+        </div>
+
+
+        <div class="table">
+
+
+            <div class="row">
+
+                <span class="label">
+                    Verification Status
                 </span>
 
                 <span
-                    class="info-value"
-                    style="
-                        color:
-                        <?php
-                        echo ($verification_status === 'APPROVED')
-                            ? '#34d399'
-                            : '#f87171';
-                        ?>;
-                    "
+                    class="value
+                    <?php
+
+                    echo $status === "APPROVED"
+                        ? "green"
+                        : (
+                            $status === "REJECTED"
+                            ? "red"
+                            : "yellow"
+                        );
+
+                    ?>"
                 >
 
-                    <?php echo safe_html($ocr_score); ?>
+                    <?php echo h($status); ?>
 
                 </span>
 
             </div>
 
 
-            <!-- FRAUD SCORE -->
+            <div class="row">
 
-            <div class="info-row">
-
-                <span class="info-label">
-                    Fraud Risk Score
+                <span class="label">
+                    AI Confidence
                 </span>
 
-                <span
-                    class="info-value"
-                    style="
-                        color:
-                        <?php
-                        echo ($db_fraud >= 60)
-                            ? '#f87171'
-                            : '#4ade80';
-                        ?>;
-                    "
-                >
+                <span class="value blue">
 
                     <?php
                     echo number_format(
-                        (float) $db_fraud,
+                        $ai_confidence,
                         1
                     );
                     ?>%
@@ -956,59 +952,102 @@ function safe_html($value)
 
             </div>
 
-        </div>
 
+            <div class="row">
 
-        <!-- FACE VERIFICATION -->
-
-        <div class="info-table">
-
-            <div class="info-row">
-
-                <span class="info-label">
-                    Face Verification Match
+                <span class="label">
+                    Fraud Risk Score
                 </span>
 
                 <span
-                    class="info-value"
-                    style="
-                        color:
-                        <?php
-                        echo ($verification_status === 'APPROVED')
-                            ? '#38bdf8'
-                            : '#f87171';
-                        ?>;
-                    "
+                    class="value
+                    <?php
+                    echo $fraud_score >= 60
+                        ? "red"
+                        : "green";
+                    ?>"
                 >
 
-                    <?php echo safe_html($face_match); ?>
+                    <?php
+                    echo number_format(
+                        $fraud_score,
+                        1
+                    );
+                    ?>%
 
                 </span>
 
             </div>
 
 
-            <div class="info-row">
+            <div class="row">
 
-                <span class="info-label">
-                    Uploaded Date
+                <span class="label">
+                    QR Verification
                 </span>
 
-                <span class="info-value">
-                    <?php echo safe_html($db_date); ?>
+                <span class="value blue">
+
+                    <?php echo h($qr_status); ?>
+
                 </span>
 
             </div>
 
 
-            <div class="info-row">
+            <div class="row">
 
-                <span class="info-label">
-                    User Email
+                <span class="label">
+                    Face Match
                 </span>
 
-                <span class="info-value">
-                    <?php echo safe_html($user_email); ?>
+                <span class="value">
+
+                    <?php
+                    echo number_format(
+                        $face_match,
+                        1
+                    );
+                    ?>%
+
+                </span>
+
+            </div>
+
+
+        </div>
+
+
+        <!-- USER -->
+
+        <div class="section-title">
+            Account Information
+        </div>
+
+
+        <div class="table">
+
+            <div class="row">
+
+                <span class="label">
+                    User
+                </span>
+
+                <span class="value">
+                    <?php echo h($user_name); ?>
+                </span>
+
+            </div>
+
+
+            <div class="row">
+
+                <span class="label">
+                    Email
+                </span>
+
+                <span class="value">
+                    <?php echo h($user_email); ?>
                 </span>
 
             </div>
@@ -1018,62 +1057,92 @@ function safe_html($value)
 
         <!-- TERMINAL -->
 
-        <div class="tech-divider">
-            DigiVerify Validation Log
+        <div class="section-title">
+            DigiVerify Security Log
         </div>
 
-        <div class="ocr-terminal">
 
-<?php echo safe_html($raw_terminal_output); ?>
+        <div class="terminal">
+
+<?php
+
+echo "DIGIVERIFY SECURITY NODE\n";
+echo "--------------------------------\n";
+echo "Verification ID : " . $verification_id . "\n";
+echo "Reference       : " . $reference . "\n";
+echo "Document Type   : " . strtoupper($document_type) . "\n";
+echo "AI Confidence   : " . number_format($ai_confidence, 1) . "%\n";
+echo "Fraud Score     : " . number_format($fraud_score, 1) . "%\n";
+echo "QR Status       : " . $qr_status . "\n";
+echo "--------------------------------\n";
+echo "FINAL STATUS    : " . $status . "\n";
+
+if ($status === "APPROVED") {
+
+    echo "[OK] Document verification completed.\n";
+
+} elseif ($status === "REJECTED") {
+
+    echo "[ALERT] Document rejected by verification engine.\n";
+
+} else {
+
+    echo "[INFO] Verification is still pending.\n";
+}
+
+?>
 
         </div>
 
 
         <!-- REMARKS -->
 
-        <div class="tech-divider">
+        <div class="section-title">
             Verification Remarks
         </div>
 
-        <div class="info-table">
+
+        <div class="table">
 
             <div
                 style="
                     color:#cbd5e1;
                     font-size:13px;
-                    line-height:1.6;
+                    line-height:1.7;
                 "
             >
 
-                <?php echo safe_html($db_remarks); ?>
+                <?php echo h($remarks); ?>
 
             </div>
 
         </div>
 
 
-        <!-- HOME -->
+        <!-- BACK -->
 
-        <div style="width:100%;">
-
-            <a
-                href="../dashboard.php"
-                class="btn-home"
-            >
-                ← Back to Dashboard
-            </a>
-
-        </div>
+        <a
+            href="../dashboard.php"
+            class="back"
+        >
+            ← Back to Dashboard
+        </a>
 
 
     </div>
 
 
     <div class="footer">
-        Enterprise DigiVerify • Secure Document Verification
+
+        Enterprise DigiVerify
+        •
+        Secure Document Verification
+
     </div>
 
+
 </div>
+
 
 </body>
 
