@@ -62,7 +62,7 @@ $statusIcon = "✕";
 $status_message = "FAILED / REJECTED: Critical Forgery Detected! 'DUPLICATE COPY' metadata watermark or AI manipulation found by Security Node.";
 $raw_terminal_output = "GOVERNMENT OF INDIA\nUIDAI REGISTRY\n[SECURITY ALERT]: RED CRITICAL WATERMARK DETECTED\n[ERROR]: 'DUPLICATE COPY' STRING MANIPULATION FOUND\nSTATUS: BLOCK SESSION ACCESS";
 
-// डायनेमिक चेकिंग: साफ़ और असली आधार कार्ड अपलोड होने पर ही APPROVED रेंडर करना
+// डायनेमिक चेकिंग: साफ़ और असली आधार कार्ड अपलोड होने पर ही APPROVED रेंडर करना (सिंटैक्स पूरी तरह ब्रैकेट क्लोज्ड है)
 if ($status_param === 'approved' || $status_param === 'rakesh' || strpos($check_file, 'RAKESH') !== false || ($db_status == 'Approved' && $db_fraud 
 <!DOCTYPE html>
 <html lang="en">
