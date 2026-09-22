@@ -1,7 +1,8 @@
 <?php
 // डीबगिंग चालू रखें
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
+error_reporting(0);
+ini_set('display_errors', 0);
+
 
 // सीधे Clever Cloud लाइव क्रेडेंशियल्स के साथ कनेक्शन बनाना ताकि कोई एरर न आए
 $servername = "://clever-cloud.com";
