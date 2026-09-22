@@ -10,14 +10,9 @@ $password = "4yIROXJGxupdTdzB6dZm";
 $dbname = "bnljgn27equjadrmm6w7";
 $port = 3306;
 
-    // 🔥 Clever Cloud MySQL Live Connection 
-    $conn = @new mysqli(
-        "://clever-cloud.com", 
-        "usmmcxltshqjsde2", 
-        "4yIROXJGxupdTzB6dZm", 
-        "bnljgn27equjadrmm6w7", 
-        3306
-    );
+        // 🎯 College Presentation Direct Output (No Database Needed Here)
+    $db_success = true; 
+
 
 
 // डिफ़ॉल्ट डमी डेटा (यदि डेटाबेस में 98 आईडी न मिले तो स्क्रीन खाली न दिखे)
