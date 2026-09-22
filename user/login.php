@@ -3,16 +3,45 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// 🎯 College Presentation Direct Dashboard Bypass
-$_SESSION['user_id'] = '1';
-$_SESSION['user_name'] = 'Riddhi Balaji Kamble';
-$_SESSION['user_email'] = 'riddhi@gmail.com';
+include("../database/config.php");
 
-// एरर रिपोर्टिंग बंद ताकि कोई पुराना डेटाबेस वेरिएबल स्क्रीन पर एरर न दे
-error_reporting(0);
-ini_set('display_errors', 0);
+// Already Logged In
+if (isset($_SESSION['user_id'])) {
+    header("Location: dashboard.php");
+    exit();
+}
+
+// LOGIN
+if (isset($_POST['login'])) {
+
+    $email = mysqli_real_escape_string($conn, trim($_POST['email']));
+    $password = mysqli_real_escape_string($conn, trim($_POST['password']));
+
+    $sql = "SELECT * FROM users
+            WHERE email='$email'
+            AND password='$password'";
+
+    $result = mysqli_query($conn, $sql);
+
+    if(mysqli_num_rows($result)>0){
+
+        $row = mysqli_fetch_assoc($result);
+
+        $_SESSION['user_id'] = $row['id'];
+        $_SESSION['user_name'] = $row['name'];
+        $_SESSION['user_email'] = $row['email'];
+
+        header("Location: dashboard.php");
+        exit();
+
+    }else{
+
+        $error = "Invalid Email or Password";
+
+    }
+
+}
 ?>
-
 
 <!DOCTYPE html>
 <html lang="en">
@@ -145,6 +174,20 @@ text-align:center;
 
 <h2>User Login</h2>
 
+<?php
+if(isset($error)){
+?>
+
+<div class="error">
+
+<?php echo $error; ?>
+
+</div>
+
+<?php
+}
+?>
+
 <form method="POST" autocomplete="off">
 
 <label>Email</label>
@@ -184,6 +227,7 @@ Forgot Password?
         ← Back to Home
     </a>
 </div>
+
 
 </form>
 
