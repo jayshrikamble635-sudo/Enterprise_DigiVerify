@@ -14,7 +14,7 @@ ini_set('display_errors', 0);
     <style>
         body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; background: #050e1e; color: #e2e8f0; display: flex; }
         .sidebar { width: 240px; background: #0b1528; padding: 20px; box-sizing: border-box; border-right: 1px solid #1e293b; text-align: left; }
-        .sidebar h2 { font-size: 22px; margin: 0; color: #fff; }
+        .sidebar h2 { font-size: 22px; color: #fff; }
         .menu-label { font-size: 11px; color: #64748b; font-weight: bold; margin: 20px 0 10px 0; }
         .sidebar-menu a { display: block; color: #94a3b8; padding: 12px; text-decoration: none; border-radius: 6px; font-size: 14px; margin-bottom: 5px; }
         .sidebar-menu a.active, .sidebar-menu a:hover { background: #1e293b; color: #3b82f6; }
@@ -38,7 +38,7 @@ ini_set('display_errors', 0);
             <a href="verify-documents.php" class="active">Verify Documents</a>
             <a href="manage-users.php">Users</a>
             <a href="notifications.php">Notifications</a>
-            <a href="profile.html">Profile</a>
+            <a href="profile.php">Profile</a>
         </nav>
     </aside>
     <main class="main-content">
