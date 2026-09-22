@@ -65,11 +65,12 @@ ini_set('display_errors', 0);
         <div class="logo-sub">ADMIN EDGE</div>
         <div class="menu-title">Main Menu</div>
         <a href="dashboard.php" class="menu-item active">Dashboard</a>
-        <a href="dashboard.php" class="menu-item">Documents</a>
-        <a href="dashboard.php" class="menu-item">Verify Documents</a>
-        <a href="dashboard.php" class="menu-item">Users</a>
-        <a href="dashboard.php" class="menu-item">Notifications</a>
-        <a href="login.php" class="menu-item" style="color: #ef4444; border-top: 1px solid #102a45; margin-top: 20px; padding-top: 15px;">Admin Logout</a>
+        <a href="documents.php" class="menu-item">Documents</a>
+        <a href="verify-documents.php" class="menu-item">Verify Documents</a>
+        <a href="users.php" class="menu-item">Users</a>
+        <a href="notifications.php" class="menu-item">Notifications</a>
+        <a href="profile.html" class="menu-item">Profile</a>
+        <a href="logout.php" class="menu-item" style="color: #ef4444; border-top: 1px solid #102a45; margin-top: 20px; padding-top: 15px;">Admin Logout</a>
     </div>
 
     <!-- MAIN DASHBOARD CONTENT AREA -->
