@@ -25,7 +25,6 @@ $confidence = $is_ai ? "0% - Fraud Risk" : "97.5% Confidence";
         body { background-color: #08111f; color: #ffffff; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
         .result-card { background: linear-gradient(145deg, #0f172a, #0b1324); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 24px; padding: 40px 30px; width: 100%; max-width: 520px; text-align: center; box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7); }
         
-        /* सक्सेस और फेलियर सर्कल्स */
         .circle { width: 70px; height: 70px; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin: 0 auto 20px auto; }
         .success-circle { border: 3px solid #10b981; }
         .success-circle::after { content: ''; width: 15px; height: 30px; border: solid #10b981; border-width: 0 4px 4px 0; transform: rotate(45deg); margin-top: -5px; }
@@ -37,14 +36,11 @@ $confidence = $is_ai ? "0% - Fraud Risk" : "97.5% Confidence";
 
         .result-card h2 { font-size: 26px; margin-bottom: 15px; font-weight: 700; }
         
-        /* स्टेटस बैज */
         .status-badge { padding: 14px 15px; border-radius: 12px; font-size: 13px; font-weight: 600; line-height: 1.5; margin-bottom: 30px; text-align: center; }
         .status-success { background-color: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: #10b981; }
         .status-fail { background-color: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; }
         
         .section-title { color: #38bdf8; font-size: 11px; font-weight: 700; text-align: left; letter-spacing: 1px; margin: 20px 0 10px 0; text-transform: uppercase; }
-        
-        /* डेटा टेबल डिज़ाइन */
         .info-table { width: 100%; background-color: rgba(19, 29, 52, 0.4); border: 1px solid rgba(56, 189, 248, 0.15); border-radius: 14px; border-collapse: separate; border-spacing: 0; margin-bottom: 15px; overflow: hidden; }
         .info-table td { padding: 16px 20px; text-align: left; font-size: 14px; border-bottom: 1px solid rgba(56, 189, 248, 0.1); }
         .info-table tr:last-child td { border-bottom: none; }
@@ -56,26 +52,21 @@ $confidence = $is_ai ? "0% - Fraud Risk" : "97.5% Confidence";
         .fail-badge { color: #ef4444; font-weight: 700; }
         .confidence-badge { color: #38bdf8; font-weight: 700; }
 
-        /* एक्शन बटन्स */
         .btn-container { display: flex; flex-direction: column; gap: 12px; margin-top: 30px; }
         .btn-primary { background: linear-gradient(135deg, #2563eb, #9333ea); border: none; color: white; padding: 14px 20px; font-size: 15px; font-weight: 700; border-radius: 12px; text-decoration: none; display: block; box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3); }
-        .btn-primary:hover { opacity: 0.95; transform: translateY(-1px); }
         .btn-secondary { background: transparent; border: 2px solid rgba(56, 189, 248, 0.4); color: #38bdf8; padding: 14px 20px; font-size: 15px; font-weight: 700; border-radius: 12px; text-decoration: none; display: block; transition: 0.3s; }
-        .btn-secondary:hover { background: rgba(56, 189, 248, 0.1); }
     </style>
 </head>
 <body>
 
 <div class="result-card">
     <?php if ($is_ai): ?>
-        <!-- नकली होने पर लाल क्रॉस (Reject) -->
         <div class="circle fail-circle"></div>
         <h2 style="color: #ef4444;">Document Rejected</h2>
         <div class="status-badge status-fail">
             REJECTED: Fake Template / Copy Pattern Detected! Document failed real-time integrity verification.
         </div>
     <?php else: ?>
-        <!-- असली होने पर हरा टिक (Approve) -->
         <div class="circle success-circle"></div>
         <h2>Document Authenticated</h2>
         <div class="status-badge status-success">
