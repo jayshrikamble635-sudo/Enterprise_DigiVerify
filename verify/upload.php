@@ -417,28 +417,108 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ocr_text'])) {
     Strong suspicious indicators or extremely weak evidence.
     */
 
-    if (count($suspiciousFound) > 0) {
+    /*
+=========================================================
+FINAL DECISION
+LOW FALSE-REJECTION PROJECT MODE
+=========================================================
+*/
 
-        $status = 'REJECTED';
+$hasAadhaarNumber = ($aadhaar !== '');
+$hasAadhaarWord   = $aadhaarKeyword;
+$hasGovIndicator  = $govKeyword;
+$hasName          = ($detectedName !== '');
 
-    } elseif (
-        $aadhaar !== '' &&
-        $aadhaarKeyword &&
-        $govKeyword &&
-        $score >= 65
-    ) {
 
-        $status = 'APPROVED';
+/*
+=========================================================
+1. EXPLICIT SUSPICIOUS INDICATOR
+=========================================================
+*/
 
-    } elseif ($score >= 40) {
+if (count($suspiciousFound) > 0) {
 
-        $status = 'MANUAL REVIEW';
+    // Suspicious OCR result ko direct reject na karke
+    // manual review me bhej rahe hain.
+    $status = 'MANUAL REVIEW';
 
-    } else {
+}
 
-        $status = 'REJECTED';
-    }
 
+/*
+=========================================================
+2. AADHAAR NUMBER DETECTED
+=========================================================
+*/
+
+elseif ($hasAadhaarNumber) {
+
+    // OCR ne 12-digit Aadhaar pattern detect kiya.
+    // DOB/name/gender miss hone par reject nahi hoga.
+    $status = 'APPROVED';
+
+}
+
+
+/*
+=========================================================
+3. AADHAAR + GOVERNMENT INDICATOR
+=========================================================
+*/
+
+elseif (
+    $hasAadhaarWord &&
+    $hasGovIndicator
+) {
+
+    $status = 'APPROVED';
+
+}
+
+
+/*
+=========================================================
+4. AADHAAR WORD + SOME DOCUMENT INFORMATION
+=========================================================
+*/
+
+elseif (
+    $hasAadhaarWord &&
+    $score >= 25
+) {
+
+    $status = 'APPROVED';
+
+}
+
+
+/*
+=========================================================
+5. PARTIAL DOCUMENT INFORMATION
+=========================================================
+*/
+
+elseif (
+    $hasName ||
+    $score >= 20
+) {
+
+    $status = 'MANUAL REVIEW';
+
+}
+
+
+/*
+=========================================================
+6. VERY WEAK OCR
+=========================================================
+*/
+
+else {
+
+    $status = 'REJECTED';
+
+}
 
     /*
     =========================================================
