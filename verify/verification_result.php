@@ -32,10 +32,9 @@ $warnings = $warningString !== ''
     ? explode('|', $warningString)
     : [];
 
-
 /*
 |--------------------------------------------------------------------------
-| STATUS HANDLING
+| STATUS HANDLING - ONLY APPROVED / REJECTED
 |--------------------------------------------------------------------------
 */
 
@@ -45,13 +44,6 @@ if ($status === 'APPROVED') {
     $subtitle = 'AI SCREENING PASSED';
     $class = 'approved';
     $icon = '✓';
-
-} elseif ($status === 'MANUAL REVIEW') {
-
-    $title = 'MANUAL REVIEW';
-    $subtitle = 'ADDITIONAL REVIEW REQUIRED';
-    $class = 'review';
-    $icon = '!';
 
 } else {
 
