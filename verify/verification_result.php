@@ -1,103 +1,60 @@
 <?php
 
-error_reporting(E_ALL);
-ini_set('display_errors', '1');
+$status = isset($_GET['status']) ? strtoupper(trim($_GET['status'])) : 'REJECTED';
+$score = isset($_GET['score']) ? intval($_GET['score']) : 0;
 
-
-$status = isset($_GET['status'])
-    ? strtoupper(trim($_GET['status']))
-    : 'MANUAL REVIEW';
-
-$score = isset($_GET['score'])
-    ? intval($_GET['score'])
-    : 0;
-
-$name = isset($_GET['name'])
+$name = isset($_GET['name']) && trim($_GET['name']) !== ''
     ? trim($_GET['name'])
     : 'NOT DETECTED';
 
-$aadhaar = isset($_GET['aadhaar'])
+$aadhaar = isset($_GET['aadhaar']) && trim($_GET['aadhaar']) !== ''
     ? trim($_GET['aadhaar'])
     : 'XXXX XXXX XXXX';
 
-$reasonString = isset($_GET['reason'])
-    ? $_GET['reason']
-    : '';
+$reasonString = isset($_GET['reason']) ? $_GET['reason'] : '';
+$warningString = isset($_GET['warning']) ? $_GET['warning'] : '';
 
-$warningString = isset($_GET['warning'])
-    ? $_GET['warning']
-    : '';
+$reasons = $reasonString !== ''
+    ? explode('|', $reasonString)
+    : [];
 
-$reasons = [];
-$warnings = [];
+$warnings = $warningString !== ''
+    ? explode('|', $warningString)
+    : [];
 
-if ($reasonString !== '') {
-    $reasons = explode('|', $reasonString);
-}
-
-if ($warningString !== '') {
-    $warnings = explode('|', $warningString);
-}
-
-
-/*
-=========================================================
-STATUS
-=========================================================
-*/
-
+/* RESULT */
 if ($status === 'APPROVED') {
 
     $title = 'APPROVED';
-
-    $subtitle =
-        'AI SCREENING PASSED';
-
+    $subtitle = 'AI SCREENING PASSED';
     $class = 'approved';
-
     $icon = '✓';
-
-} elseif ($status === 'REJECTED') {
-
-    $title = 'REJECTED';
-
-    $subtitle =
-        'SCREENING FAILED';
-
-    $class = 'rejected';
-
-    $icon = '✕';
 
 } else {
 
-    $title = 'MANUAL REVIEW';
+    $status = 'REJECTED';
+    $title = 'REJECTED';
+    $subtitle = 'AI SCREENING FAILED';
+    $class = 'rejected';
+    $icon = '✕';
+}
 
-    $subtitle =
-        'ADDITIONAL CHECK REQUIRED';
-
-    $class = 'review';
-
-    $icon = '!';
+function e($value)
+{
+    return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
 }
 
 ?>
 
 <!DOCTYPE html>
-
 <html lang="en">
 
 <head>
 
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
->
-
-<title>
-Enterprise DigiVerify - Verification Result
-</title>
+<title>DigiVerify - Verification Result</title>
 
 <style>
 
@@ -106,366 +63,243 @@ Enterprise DigiVerify - Verification Result
 }
 
 body {
-
     margin: 0;
-
     min-height: 100vh;
-
-    font-family: Arial, sans-serif;
-
+    font-family: Arial, Helvetica, sans-serif;
     background:
-        radial-gradient(
-            circle at top left,
-            #12345b,
-            transparent 40%
-        ),
-        radial-gradient(
-            circle at bottom right,
-            #063b45,
-            transparent 40%
-        ),
-        #050b16;
-
-    color: white;
-
-    padding: 25px;
+        radial-gradient(circle at top left, #123a68 0%, transparent 35%),
+        radial-gradient(circle at bottom right, #062d48 0%, transparent 35%),
+        #020b16;
+    color: #ffffff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 30px;
 }
 
 .container {
-
     width: 100%;
-
     max-width: 850px;
-
-    margin: auto;
-
-    background: rgba(7,18,34,.97);
-
-    border: 1px solid #1e6784;
-
-    border-radius: 22px;
-
-    padding: 35px;
-
-    box-shadow:
-        0 0 50px
-        rgba(0,200,255,.12);
 }
 
-.header {
-
-    text-align: center;
+.card {
+    background: rgba(5, 20, 35, 0.94);
+    border: 1px solid rgba(0, 212, 255, 0.35);
+    border-radius: 22px;
+    padding: 35px;
+    box-shadow:
+        0 0 35px rgba(0, 180, 255, 0.15),
+        inset 0 0 25px rgba(0, 120, 180, 0.05);
 }
 
 .logo {
-
-    color: #42d9ff;
-
-    font-size: 31px;
-
+    text-align: center;
+    font-size: 28px;
     font-weight: bold;
+    color: #00d9ff;
+    margin-bottom: 25px;
+}
+
+.result-box {
+    text-align: center;
+    padding: 30px 20px;
+    border-radius: 18px;
+    margin-bottom: 25px;
+}
+
+.result-box.approved {
+    border: 2px solid #00ff9d;
+    background: rgba(0, 255, 157, 0.07);
+    box-shadow: 0 0 30px rgba(0, 255, 157, 0.15);
+}
+
+.result-box.rejected {
+    border: 2px solid #ff4757;
+    background: rgba(255, 71, 87, 0.07);
+    box-shadow: 0 0 30px rgba(255, 71, 87, 0.15);
+}
+
+.icon {
+    width: 85px;
+    height: 85px;
+    border-radius: 50%;
+    margin: 0 auto 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 50px;
+    font-weight: bold;
+}
+
+.approved .icon {
+    color: #00ff9d;
+    border: 3px solid #00ff9d;
+}
+
+.rejected .icon {
+    color: #ff4757;
+    border: 3px solid #ff4757;
+}
+
+.result-title {
+    font-size: 38px;
+    font-weight: bold;
+    letter-spacing: 2px;
+}
+
+.approved .result-title {
+    color: #00ff9d;
+}
+
+.rejected .result-title {
+    color: #ff4757;
 }
 
 .subtitle {
-
     margin-top: 8px;
-
-    color: #91a8bb;
-}
-
-
-/*
-STATUS
-*/
-
-.status {
-
-    width: 230px;
-
-    height: 230px;
-
-    margin: 30px auto;
-
-    border-radius: 50%;
-
-    display: flex;
-
-    flex-direction: column;
-
-    justify-content: center;
-
-    align-items: center;
-
-    border: 5px solid;
-}
-
-.status-icon {
-
-    font-size: 70px;
-
-    font-weight: bold;
-}
-
-.status-title {
-
-    font-size: 24px;
-
-    font-weight: bold;
-
-    margin-top: 5px;
-}
-
-.status-subtitle {
-
-    font-size: 12px;
-
-    margin-top: 8px;
-
+    color: #a8c7d8;
+    font-size: 15px;
     letter-spacing: 1px;
 }
 
-.approved {
-
-    color: #00e5a3;
-
-    border-color: #00d99b;
-
-    box-shadow:
-        0 0 40px
-        rgba(0,229,163,.25);
-}
-
-.rejected {
-
-    color: #ff647a;
-
-    border-color: #ff4d67;
-
-    box-shadow:
-        0 0 40px
-        rgba(255,77,103,.25);
-}
-
-.review {
-
-    color: #ffc04a;
-
-    border-color: #ffb52e;
-
-    box-shadow:
-        0 0 40px
-        rgba(255,181,46,.25);
-}
-
-
-/*
-CARDS
-*/
-
-.card {
-
-    background: #0a192c;
-
-    border: 1px solid #1b425a;
-
-    border-radius: 15px;
-
-    padding: 23px;
-
-    margin-top: 20px;
-}
-
-.card-title {
-
-    color: #42d9ff;
-
-    font-size: 19px;
-
+.score {
+    margin: 20px auto 0;
+    display: inline-block;
+    padding: 10px 22px;
+    border-radius: 30px;
+    background: rgba(0, 212, 255, 0.1);
+    border: 1px solid rgba(0, 212, 255, 0.35);
+    color: #00d9ff;
+    font-size: 18px;
     font-weight: bold;
-
-    margin-bottom: 18px;
 }
 
-.row {
-
-    display: flex;
-
-    justify-content: space-between;
-
-    padding: 13px 0;
-
-    border-bottom: 1px solid #173247;
-
-    gap: 20px;
+.section-title {
+    color: #00d9ff;
+    font-size: 18px;
+    font-weight: bold;
+    margin: 25px 0 12px;
 }
 
-.row:last-child {
+.details {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
 
-    border-bottom: 0;
+.detail {
+    background: rgba(255,255,255,0.035);
+    border: 1px solid rgba(255,255,255,0.08);
+    padding: 18px;
+    border-radius: 12px;
 }
 
 .label {
-
-    color: #8fa5b8;
+    color: #7896a8;
+    font-size: 12px;
+    text-transform: uppercase;
+    margin-bottom: 7px;
 }
 
 .value {
-
-    text-align: right;
-
+    color: #ffffff;
+    font-size: 16px;
     font-weight: bold;
 }
 
-
-/*
-SCORE
-*/
-
-.score-number {
-
-    text-align: center;
-
-    font-size: 42px;
-
-    color: #42d9ff;
-
-    font-weight: bold;
+.list {
+    background: rgba(255,255,255,0.03);
+    border-radius: 12px;
+    padding: 15px 20px;
 }
 
-.score-label {
-
-    text-align: center;
-
-    color: #8299aa;
-
-    margin-top: 5px;
+.list div {
+    padding: 9px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    color: #c7dce7;
 }
 
-
-/*
-REASONS
-*/
-
-.reason {
-
-    padding: 11px 0;
-
-    border-bottom: 1px solid #173247;
-
-    color: #c4d2dd;
+.list div:last-child {
+    border-bottom: none;
 }
 
-.reason:last-child {
-
-    border-bottom: 0;
+.good {
+    color: #00ff9d !important;
 }
 
-.warning {
-
-    padding: 11px 0;
-
-    border-bottom: 1px solid #3b3020;
-
-    color: #ffc04a;
+.bad {
+    color: #ff6b78 !important;
 }
-
-.warning:last-child {
-
-    border-bottom: 0;
-}
-
-
-/*
-NOTICE
-*/
 
 .notice {
-
-    margin-top: 20px;
-
-    padding: 18px;
-
-    background: #101e2e;
-
-    border: 1px solid #31516a;
-
+    margin-top: 25px;
+    padding: 15px;
     border-radius: 12px;
-
-    color: #9eb2c2;
-
+    background: rgba(255,193,7,0.07);
+    border: 1px solid rgba(255,193,7,0.25);
+    color: #d9c98b;
     font-size: 13px;
-
-    line-height: 1.7;
+    line-height: 1.6;
 }
 
-
-/*
-BUTTONS
-*/
-
 .buttons {
-
     display: flex;
-
     gap: 15px;
+    margin-top: 28px;
+}
 
+.btn {
+    flex: 1;
+    text-decoration: none;
+    text-align: center;
+    padding: 14px;
+    border-radius: 10px;
+    font-weight: bold;
+    transition: 0.2s;
+}
+
+.btn-primary {
+    background: #00c8ff;
+    color: #00121c;
+}
+
+.btn-secondary {
+    background: rgba(255,255,255,0.06);
+    color: #ffffff;
+    border: 1px solid rgba(255,255,255,0.15);
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+}
+
+.footer {
+    text-align: center;
+    color: #5d7888;
+    font-size: 12px;
     margin-top: 25px;
 }
 
-.buttons a {
+@media(max-width:650px) {
 
-    flex: 1;
-
-    padding: 15px;
-
-    text-align: center;
-
-    border-radius: 10px;
-
-    text-decoration: none;
-
-    font-weight: bold;
-}
-
-.verify {
-
-    color: #001018;
-
-    background:
-        linear-gradient(
-            90deg,
-            #00a8e8,
-            #00d4aa
-        );
-}
-
-.home {
-
-    color: white;
-
-    background: #14283c;
-
-    border: 1px solid #31516a;
-}
-
-
-@media(max-width:600px) {
-
-    .container {
-        padding: 22px;
+    body {
+        padding: 15px;
     }
 
-    .row {
-        flex-direction: column;
-        gap: 5px;
+    .card {
+        padding: 20px;
     }
 
-    .value {
-        text-align: left;
+    .details {
+        grid-template-columns: 1fr;
     }
 
     .buttons {
         flex-direction: column;
+    }
+
+    .result-title {
+        font-size: 30px;
     }
 }
 
@@ -477,334 +311,191 @@ BUTTONS
 
 <div class="container">
 
+<div class="card">
 
-    <!-- HEADER -->
+<div class="logo">
+    🛡 DigiVerify
+</div>
 
-    <div class="header">
+<!-- RESULT -->
 
-        <div class="logo">
+<div class="result-box <?= e($class) ?>">
 
-            Enterprise DigiVerify
+    <div class="icon">
+        <?= e($icon) ?>
+    </div>
 
+    <div class="result-title">
+        <?= e($title) ?>
+    </div>
+
+    <div class="subtitle">
+        <?= e($subtitle) ?>
+    </div>
+
+    <div class="score">
+        AI SCREENING SCORE: <?= e($score) ?>/100
+    </div>
+
+</div>
+
+
+<!-- DOCUMENT DETAILS -->
+
+<div class="section-title">
+    📄 Document Details
+</div>
+
+<div class="details">
+
+    <div class="detail">
+
+        <div class="label">
+            Document Holder
         </div>
 
-        <div class="subtitle">
-
-            AI-Assisted Document Verification System
-
+        <div class="value">
+            <?= e($name) ?>
         </div>
 
     </div>
 
 
-    <!-- STATUS -->
+    <div class="detail">
 
-    <div
-        class="status <?php
-        echo htmlspecialchars($class);
-        ?>"
-    >
-
-        <div class="status-icon">
-
-            <?php
-            echo htmlspecialchars($icon);
-            ?>
-
+        <div class="label">
+            Aadhaar Number
         </div>
 
-
-        <div class="status-title">
-
-            <?php
-            echo htmlspecialchars($title);
-            ?>
-
-        </div>
-
-
-        <div class="status-subtitle">
-
-            <?php
-            echo htmlspecialchars($subtitle);
-            ?>
-
+        <div class="value">
+            <?= e($aadhaar) ?>
         </div>
 
     </div>
 
 
-    <!-- DOCUMENT -->
+    <div class="detail">
 
-    <div class="card">
-
-        <div class="card-title">
-
-            Document Analysis
-
+        <div class="label">
+            OCR Engine
         </div>
 
-
-        <div class="row">
-
-            <div class="label">
-                Document Type
-            </div>
-
-            <div class="value">
-                Aadhaar
-            </div>
-
-        </div>
-
-
-        <div class="row">
-
-            <div class="label">
-                Detected Name
-            </div>
-
-            <div class="value">
-
-                <?php
-
-                echo htmlspecialchars(
-                    $name !== ''
-                        ? $name
-                        : 'NOT DETECTED'
-                );
-
-                ?>
-
-            </div>
-
-        </div>
-
-
-        <div class="row">
-
-            <div class="label">
-                Aadhaar Number
-            </div>
-
-            <div class="value">
-
-                <?php
-                echo htmlspecialchars($aadhaar);
-                ?>
-
-            </div>
-
-        </div>
-
-
-        <div class="row">
-
-            <div class="label">
-                OCR Engine
-            </div>
-
-            <div class="value">
-                Tesseract.js
-            </div>
-
-        </div>
-
-
-        <div class="row">
-
-            <div class="label">
-                Screening Engine
-            </div>
-
-            <div class="value">
-                DigiVerify AI Rules
-            </div>
-
+        <div class="value">
+            Tesseract.js
         </div>
 
     </div>
 
 
-    <!-- SCORE -->
+    <div class="detail">
 
-    <div class="card">
-
-        <div class="card-title">
-            AI Screening Score
+        <div class="label">
+            AI Screening Engine
         </div>
 
-
-        <div class="score-number">
-
-            <?php
-            echo htmlspecialchars($score);
-            ?>/100
-
-        </div>
-
-
-        <div class="score-label">
-
-            Document Screening Confidence
-
+        <div class="value">
+            DigiVerify AI
         </div>
 
     </div>
 
+</div>
 
-    <!-- POSITIVE CHECKS -->
 
-    <div class="card">
+<!-- POSITIVE CHECKS -->
 
-        <div class="card-title">
+<div class="section-title">
+    ✓ Analysis Details
+</div>
 
-            Checks Passed
+<div class="list">
 
-        </div>
+<?php
 
+if (count($reasons) > 0) {
 
-        <?php
+    foreach ($reasons as $reason) {
 
-        if (count($reasons) > 0):
+        if (trim($reason) === '') {
+            continue;
+        }
 
-            foreach ($reasons as $reason):
+        echo '<div class="good">✓ ' . e($reason) . '</div>';
+    }
 
-        ?>
+} else {
 
-            <div class="reason">
+    echo '<div>No positive checks detected.</div>';
 
-                ✓
+}
 
-                <?php
+?>
 
-                echo htmlspecialchars(
-                    trim($reason)
-                );
+</div>
 
-                ?>
 
-            </div>
+<!-- WARNINGS -->
 
-        <?php
+<?php if (count($warnings) > 0): ?>
 
-            endforeach;
+<div class="section-title">
+    ⚠ Warnings
+</div>
 
-        else:
+<div class="list">
 
-        ?>
+<?php
 
-            <div class="reason">
+foreach ($warnings as $warning) {
 
-                No positive checks recorded.
+    if (trim($warning) === '') {
+        continue;
+    }
 
-            </div>
+    echo '<div class="bad">⚠ ' . e($warning) . '</div>';
 
-        <?php endif; ?>
+}
 
-    </div>
+?>
 
+</div>
 
-    <!-- WARNINGS -->
+<?php endif; ?>
 
-    <?php if (count($warnings) > 0): ?>
 
-    <div class="card">
+<!-- NOTICE -->
 
-        <div class="card-title">
+<div class="notice">
 
-            Additional Observations
+<strong>Important:</strong><br>
 
-        </div>
+This result represents a project-level AI document screening.
+It does not constitute official UIDAI authentication or a legal
+confirmation that an Aadhaar document is genuine.
 
+</div>
 
-        <?php foreach ($warnings as $warning): ?>
 
-            <div class="warning">
+<!-- BUTTONS -->
 
-                !
+<div class="buttons">
 
-                <?php
+<a href="upload.php" class="btn btn-primary">
+    🔍 Verify Another Document
+</a>
 
-                echo htmlspecialchars(
-                    trim($warning)
-                );
+<a href="../index.php" class="btn btn-secondary">
+    🏠 Home
+</a>
 
-                ?>
+</div>
 
-            </div>
 
-        <?php endforeach; ?>
+<div class="footer">
+    Enterprise DigiVerify • Digital Document Screening Platform
+</div>
 
-    </div>
-
-    <?php endif; ?>
-
-
-    <!-- NOTICE -->
-
-    <div class="notice">
-
-        <strong>DigiVerify Result:</strong>
-
-        <br><br>
-
-        <?php if ($status === 'APPROVED'): ?>
-
-            The document passed the configured
-            DigiVerify AI-assisted screening checks.
-
-        <?php elseif ($status === 'REJECTED'): ?>
-
-            The document failed the configured
-            screening criteria or contained
-            suspicious indicators.
-
-        <?php else: ?>
-
-            The available OCR evidence is insufficient
-            for automatic approval. Manual review
-            is recommended.
-
-        <?php endif; ?>
-
-
-        <br><br>
-
-        <strong>Important:</strong>
-
-        This is a project-level AI-assisted
-        document screening result. It does not
-        constitute official UIDAI authentication
-        or government confirmation of authenticity.
-
-    </div>
-
-
-    <!-- BUTTONS -->
-
-    <div class="buttons">
-
-        <a
-            class="verify"
-            href="upload.php"
-        >
-
-            🔍 Verify Another Document
-
-        </a>
-
-
-        <a
-            class="home"
-            href="../index.php"
-        >
-
-            🏠 Home
-
-        </a>
-
-    </div>
+</div>
 
 </div>
 
