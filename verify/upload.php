@@ -1,5 +1,5 @@
 <?php
-// डीबगिंग चालू रखें
+// 1. एरर रिपोर्टिंग चालू रखना ताकि कोई गलती हो तो स्क्रीन पर दिखे
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
@@ -14,16 +14,16 @@ if (\(_SERVER['REQUEST_METHOD'] === 'POST' && isset(\)_POST['ocr_text'])) {
     \$aadhaar_no = "XXXX XXXX XXXX";
     \$is_ai = "false";
 
-    // 1. आधार नंबर पैटर्न (12 डिजिट स्पेस के साथ) खोजना
+    // ए) आधार नंबर पैटर्न (12 डिजिट स्पेस के साथ) खोजना
     if (preg_match('/[0-9]{4}\s[0-9]{4}\s[0-9]{4}/', \(extracted_text,\)matches)) {
         \(aadhaar_no =\)matches[0];
     }
 
-    // 2. नकली या एआई जनरेटेड कॉपी की पहचान (DUPLICATE या COPY पैटर्न मिलते ही)
+    // बी) नकली या एआई जनरेटेड कॉपी की पहचान (DUPLICATE या COPY पैटर्न मिलते ही)
     if (stripos(\$extracted_text, 'DUPLICATE') !== false || stripos(\(extracted_text, 'SAMPLE') !== false \vert{}\vert{} stripos(\)extracted_text, 'COPY') !== false || stripos(\(extracted_text, 'FAKE') !== false) {\)is_ai = "true";
     }
 
-    // 3. नाम निकालने का डायनामिक लॉजिक (भारत सरकार या GOVERNMENT OF INDIA के ठीक नीचे)
+    // सी) नाम निकालने का डायनामिक लॉजिक (भारत सरकार या GOVERNMENT OF INDIA के ठीक नीचे)
     \(lines = explode("\n", \)extracted_text);
     foreach (\$lines as key => line) {
         line = trim(line);
@@ -75,7 +75,6 @@ if (\(_SERVER['REQUEST_METHOD'] === 'POST' && isset(\)_POST['ocr_text'])) {
 </head>
 <body>
     <div class="upload-card">
-        <!-- लाइव स्कैनिंग एनीमेशन स्क्रीन -->
         <div class="loading-overlay" id="loading-box">
             <div class="spinner"></div>
             <div class="loading-text" id="status-text">AI Scanning Document...</div>
@@ -119,7 +118,6 @@ function startLiveOCR() {
         return;
     }
 
-    // लोडर एनीमेशन एक्टिवेट करना
     document.getElementById('loading-box').style.display = 'flex';
     const statusText = document.getElementById('status-text');
     
@@ -129,16 +127,13 @@ function startLiveOCR() {
     reader.onload = function() {
         statusText.textContent = "Reading Aadhaar Text (Live OCR)...";
         
-        // रीयल-टाइम Tesseract OCR प्रोसेसिंग चालू
         Tesseract.recognize(
             reader.result,
             'eng+hin', 
             { logger: m => { if(m.status === 'recognizing') statusText.textContent = `Analyzing: ${Math.floor(m.progress * 100)}%`; } }
         ).then(({ data: { text, lines } }) => {
-            // पढ़े हुए टेक्स्ट को हिडन फील्ड में स्टोर करना
             document.getElementById('ocr-hidden-input').value = text;
             
-            // फ्रंटएंड जावास्क्रिप्ट द्वारा बैकअप नाम फ़िल्टर
             let extractedName = "";
             for(let i = 0; i < lines.length; i++) {
                 let txt = lines[i].text.toUpperCase();
@@ -150,8 +145,6 @@ function startLiveOCR() {
                 }
             }
             document.getElementById('js-name-input').value = extractedName;
-            
-            // डेटा को प्रोसेसिंग के लिए PHP बैकएंड पर सबमिट करना
             document.getElementById('main-form').submit();
         }).catch(err => {
             alert("OCR Scanning Failed: " + err);
