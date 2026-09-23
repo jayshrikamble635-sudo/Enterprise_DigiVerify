@@ -19,26 +19,21 @@ $status = isset($_GET['status'])
     ? strtoupper(trim($_GET['status']))
     : 'REJECTED';
 
-
 $score = isset($_GET['score'])
     ? intval($_GET['score'])
     : 0;
-
 
 $name = isset($_GET['name'])
     ? trim($_GET['name'])
     : '';
 
-
 $aadhaar = isset($_GET['aadhaar'])
     ? trim($_GET['aadhaar'])
     : '';
 
-
 $reasonString = isset($_GET['reason'])
     ? trim($_GET['reason'])
     : '';
-
 
 $warningString = isset($_GET['warning'])
     ? trim($_GET['warning'])
@@ -52,14 +47,37 @@ DEFAULT VALUES
 */
 
 if ($name === '') {
-
     $name = 'NOT DETECTED';
 }
 
-
 if ($aadhaar === '') {
-
     $aadhaar = 'XXXX XXXX XXXX';
+}
+
+
+/*
+=========================================================
+ONLY TWO VALID STATUSES
+=========================================================
+*/
+
+if ($status !== 'APPROVED') {
+    $status = 'REJECTED';
+}
+
+
+/*
+=========================================================
+SCORE LIMIT
+=========================================================
+*/
+
+if ($score < 0) {
+    $score = 0;
+}
+
+if ($score > 100) {
+    $score = 100;
 }
 
 
@@ -70,7 +88,6 @@ REASONS
 */
 
 $reasons = [];
-
 
 if ($reasonString !== '') {
 
@@ -89,7 +106,6 @@ WARNINGS
 
 $warnings = [];
 
-
 if ($warningString !== '') {
 
     $warnings = explode(
@@ -101,7 +117,7 @@ if ($warningString !== '') {
 
 /*
 =========================================================
-REMOVE EMPTY ITEMS
+REMOVE EMPTY VALUES
 =========================================================
 */
 
@@ -109,21 +125,16 @@ $reasons = array_values(
     array_filter(
         $reasons,
         function ($value) {
-
             return trim($value) !== '';
-
         }
     )
 );
-
 
 $warnings = array_values(
     array_filter(
         $warnings,
         function ($value) {
-
             return trim($value) !== '';
-
         }
     )
 );
@@ -131,32 +142,11 @@ $warnings = array_values(
 
 /*
 =========================================================
-SCORE LIMIT
-=========================================================
-*/
-
-if ($score < 0) {
-
-    $score = 0;
-}
-
-
-if ($score > 100) {
-
-    $score = 100;
-}
-
-
-/*
-=========================================================
-STATUS
-ONLY APPROVED / REJECTED
+STATUS UI
 =========================================================
 */
 
 if ($status === 'APPROVED') {
-
-    $status = 'APPROVED';
 
     $title = 'APPROVED';
 
@@ -168,8 +158,6 @@ if ($status === 'APPROVED') {
     $icon = '✓';
 
 } else {
-
-    $status = 'REJECTED';
 
     $title = 'REJECTED';
 
@@ -217,28 +205,24 @@ function e($value)
 >
 
 <title>
-    Enterprise DigiVerify | Verification Result
+    Enterprise DigiVerify | <?php echo e($title); ?>
 </title>
 
 
 <style>
 
 /* =====================================================
-   GLOBAL RESET
+   GLOBAL
 ===================================================== */
 
 * {
-
     margin: 0;
-
     padding: 0;
-
     box-sizing: border-box;
 }
 
 
 html {
-
     scroll-behavior: smooth;
 }
 
@@ -327,6 +311,10 @@ body {
         rgba(0, 229, 255, 0.03);
 }
 
+
+/* =====================================================
+   LOGO
+===================================================== */
 
 .logo {
 
@@ -482,7 +470,7 @@ body {
 
 
 /* =====================================================
-   STATUS
+   STATUS AREA
 ===================================================== */
 
 .status-area {
@@ -639,11 +627,6 @@ body {
     border: 2px solid #205879;
 
     border-radius: 16px;
-
-    box-shadow:
-
-        inset 0 0 20px
-        rgba(0, 229, 255, 0.025);
 }
 
 
@@ -718,7 +701,7 @@ body {
 
 
 /* =====================================================
-   SECTIONS
+   SECTION
 ===================================================== */
 
 .section {
@@ -752,7 +735,7 @@ body {
 
 
 /* =====================================================
-   INFORMATION GRID
+   DETAILS GRID
 ===================================================== */
 
 .details-grid {
@@ -778,19 +761,6 @@ body {
     border: 2px solid #173f5b;
 
     border-radius: 13px;
-
-    transition: .2s ease;
-}
-
-
-.detail-card:hover {
-
-    border-color: #00a9d1;
-
-    box-shadow:
-
-        0 0 18px
-        rgba(0, 229, 255, 0.08);
 }
 
 
@@ -932,7 +902,7 @@ body {
 
 
 /* =====================================================
-   IMPORTANT NOTICE
+   NOTICE
 ===================================================== */
 
 .notice {
@@ -1101,7 +1071,6 @@ body {
 @media (max-width: 700px) {
 
     body {
-
         padding: 15px 10px;
     }
 
@@ -1228,7 +1197,7 @@ body {
 
 
     <!-- =================================================
-         RESULT
+         RESULT CARD
     ================================================== -->
 
     <main
@@ -1236,9 +1205,7 @@ body {
     >
 
 
-        <!-- =================================================
-             STATUS
-        ================================================== -->
+        <!-- STATUS -->
 
         <div class="status-area">
 
@@ -1268,9 +1235,7 @@ body {
 
 
 
-        <!-- =================================================
-             SCORE
-        ================================================== -->
+        <!-- SCORE -->
 
         <div class="score-box">
 
@@ -1291,7 +1256,10 @@ body {
 
             <div class="score-bar">
 
-                <div class="score-fill"></div>
+                <div
+                    class="score-fill"
+                    style="width: <?php echo e($score); ?>%;"
+                ></div>
 
             </div>
 
@@ -1300,9 +1268,7 @@ body {
 
 
 
-        <!-- =================================================
-             DOCUMENT INFORMATION
-        ================================================== -->
+        <!-- DOCUMENT INFORMATION -->
 
         <section class="section">
 
@@ -1320,111 +1286,76 @@ body {
                 <div class="detail-card">
 
                     <div class="detail-label">
-
                         Document Holder
-
                     </div>
 
-
                     <div class="detail-value">
-
                         <?php echo e($name); ?>
-
                     </div>
 
                 </div>
 
 
-
                 <div class="detail-card">
 
                     <div class="detail-label">
-
                         Aadhaar Number
-
                     </div>
 
-
                     <div class="detail-value">
-
                         <?php echo e($aadhaar); ?>
-
                     </div>
 
                 </div>
 
 
-
                 <div class="detail-card">
 
                     <div class="detail-label">
-
                         OCR Engine
-
                     </div>
 
-
                     <div class="detail-value">
-
                         Tesseract.js
-
                     </div>
 
                 </div>
 
 
-
                 <div class="detail-card">
 
                     <div class="detail-label">
-
                         AI Screening Engine
-
                     </div>
 
-
                     <div class="detail-value">
-
                         DigiVerify AI
-
                     </div>
 
                 </div>
 
 
-
                 <div class="detail-card">
 
                     <div class="detail-label">
-
                         Verification Mode
-
                     </div>
 
-
                     <div class="detail-value">
-
                         Document Screening
-
                     </div>
 
                 </div>
 
 
-
                 <div class="detail-card">
 
                     <div class="detail-label">
-
                         Final Status
-
                     </div>
 
-
                     <div class="detail-value">
-
                         <?php echo e($status); ?>
-
                     </div>
 
                 </div>
@@ -1436,9 +1367,7 @@ body {
 
 
 
-        <!-- =================================================
-             ANALYSIS DETAILS
-        ================================================== -->
+        <!-- ANALYSIS -->
 
         <section class="section">
 
@@ -1463,16 +1392,12 @@ body {
 
 
                             <div class="analysis-icon">
-
                                 ✓
-
                             </div>
 
 
                             <div>
-
                                 <?php echo e(trim($reason)); ?>
-
                             </div>
 
 
@@ -1502,65 +1427,57 @@ body {
 
 
 
-        <!-- =================================================
-             WARNINGS
-        ================================================== -->
+        <!-- WARNINGS -->
 
         <?php if (count($warnings) > 0): ?>
 
 
-        <section class="section">
+            <section class="section">
 
 
-            <div class="section-title">
+                <div class="section-title">
 
-                ⚠ Screening Warnings
+                    ⚠ Screening Warnings
 
-            </div>
-
-
-            <div class="analysis-list">
+                </div>
 
 
-                <?php foreach ($warnings as $warning): ?>
+                <div class="analysis-list">
 
 
-                    <div class="analysis-item warning">
+                    <?php foreach ($warnings as $warning): ?>
 
 
-                        <div class="analysis-icon">
+                        <div class="analysis-item warning">
 
-                            !
+
+                            <div class="analysis-icon">
+                                !
+                            </div>
+
+
+                            <div>
+                                <?php echo e(trim($warning)); ?>
+                            </div>
+
 
                         </div>
 
 
-                        <div>
-
-                            <?php echo e(trim($warning)); ?>
-
-                        </div>
+                    <?php endforeach; ?>
 
 
-                    </div>
+                </div>
 
 
-                <?php endforeach; ?>
-
-
-            </div>
-
-
-        </section>
+            </section>
 
 
         <?php endif; ?>
 
 
 
-        <!-- =================================================
-             IMPORTANT NOTICE
-        ================================================== -->
+        <!-- IMPORTANT NOTICE -->
 
         <div class="notice">
 
@@ -1591,9 +1508,7 @@ body {
 
 
 
-        <!-- =================================================
-             BUTTONS
-        ================================================== -->
+        <!-- BUTTONS -->
 
         <div class="buttons">
 
@@ -1625,12 +1540,9 @@ body {
 
 
 
-    <!-- =================================================
-         FOOTER
-    ================================================== -->
+    <!-- FOOTER -->
 
     <footer class="footer">
-
 
         Enterprise DigiVerify
         &nbsp;•&nbsp;
@@ -1638,13 +1550,10 @@ body {
         &nbsp;•&nbsp;
         B.Sc. Computer Science Project
 
-
         <br>
-
 
         Project-level screening only —
         not official government authentication.
-
 
     </footer>
 
