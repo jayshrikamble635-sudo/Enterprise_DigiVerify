@@ -3,111 +3,76 @@
 error_reporting(E_ALL);
 ini_set('display_errors', '1');
 
-/*
-|--------------------------------------------------------------------------
-| DigiVerify - Verification Result
-|--------------------------------------------------------------------------
-| Receives OCR results from upload.php
-|--------------------------------------------------------------------------
-*/
+
+/* ==============================
+   GET RESULT DATA
+   ============================== */
+
+$status = isset($_GET['status'])
+    ? strtoupper(trim($_GET['status']))
+    : 'MANUAL REVIEW';
 
 
-// =====================================================
-// GET DATA FROM UPLOAD.PHP
-// =====================================================
+$score = isset($_GET['score'])
+    ? intval($_GET['score'])
+    : 0;
 
-$detected_name = isset($_GET['name'])
+
+$name = isset($_GET['name'])
     ? trim($_GET['name'])
     : 'NOT DETECTED';
 
-$aadhaar_no = isset($_GET['aadhaar'])
+
+$aadhaar = isset($_GET['aadhaar'])
     ? trim($_GET['aadhaar'])
     : 'XXXX XXXX XXXX';
 
-$is_ai = isset($_GET['is_ai'])
-    ? strtolower(trim($_GET['is_ai']))
-    : 'false';
+
+$reasonString = isset($_GET['reason'])
+    ? $_GET['reason']
+    : '';
 
 
-// =====================================================
-// BASIC VALIDATION
-// =====================================================
+$reasons = [];
 
-if ($detected_name === '') {
-    $detected_name = 'NOT DETECTED';
+if ($reasonString !== '') {
+
+    $reasons =
+        explode(
+            '|',
+            $reasonString
+        );
 }
 
-if ($aadhaar_no === '') {
-    $aadhaar_no = 'XXXX XXXX XXXX';
-}
 
+/* ==============================
+   STATUS DESIGN
+   ============================== */
 
-// =====================================================
-// DETERMINE STATUS
-// =====================================================
+if ($status === 'APPROVED') {
 
-if ($is_ai === 'true') {
+    $statusTitle = 'APPROVED';
 
-    $status = 'REVIEW REQUIRED';
+    $statusClass = 'approved';
 
-    $status_class = 'warning';
+    $statusIcon = '✓';
 
-    $status_icon = '⚠';
+} elseif ($status === 'REJECTED') {
 
-    $status_message =
-        'The uploaded document contains text patterns ' .
-        'that require additional review.';
+    $statusTitle = 'REJECTED';
+
+    $statusClass = 'rejected';
+
+    $statusIcon = '✕';
 
 } else {
 
-    $status = 'OCR SCREENING PASSED';
+    $statusTitle = 'MANUAL REVIEW';
 
-    $status_class = 'success';
+    $statusClass = 'review';
 
-    $status_icon = '✓';
-
-    $status_message =
-        'The document passed the basic OCR-based ' .
-        'screening checks.';
+    $statusIcon = '!';
 }
-
-
-// =====================================================
-// MASK AADHAAR NUMBER
-// =====================================================
-
-$display_aadhaar = $aadhaar_no;
-
-if (
-    preg_match(
-        '/^(\d{4})\s+(\d{4})\s+(\d{4})$/',
-        $aadhaar_no,
-        $matches
-    )
-) {
-
-    $display_aadhaar =
-        'XXXX XXXX ' . $matches[3];
-}
-
-
-// =====================================================
-// SAFE OUTPUT
-// =====================================================
-
-$safe_name =
-    htmlspecialchars(
-        $detected_name,
-        ENT_QUOTES,
-        'UTF-8'
-    );
-
-$safe_aadhaar =
-    htmlspecialchars(
-        $display_aadhaar,
-        ENT_QUOTES,
-        'UTF-8'
-    );
 
 ?>
 
@@ -117,430 +82,394 @@ $safe_aadhaar =
 
 <head>
 
-    <meta charset="UTF-8">
+<meta charset="UTF-8">
 
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+>
 
-    <title>
-        DigiVerify | Verification Result
-    </title>
+<title>
+DigiVerify - Verification Result
+</title>
 
 
-    <style>
+<style>
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+* {
+    box-sizing: border-box;
+}
 
 
-        body {
+body {
 
-            font-family:
-                'Segoe UI',
-                Arial,
-                sans-serif;
+    margin: 0;
 
-            background:
-                radial-gradient(
-                    circle at top,
-                    #10254a 0%,
-                    #08111f 45%,
-                    #040914 100%
-                );
+    min-height: 100vh;
 
-            color: #ffffff;
+    font-family: Arial, sans-serif;
 
-            min-height: 100vh;
+    background:
+        radial-gradient(
+            circle at top left,
+            #12345b,
+            transparent 40%
+        ),
+        radial-gradient(
+            circle at bottom right,
+            #063b45,
+            transparent 40%
+        ),
+        #050b16;
 
-            display: flex;
+    color: white;
 
-            justify-content: center;
+    display: flex;
 
-            align-items: center;
+    justify-content: center;
 
-            padding: 30px;
-        }
+    align-items: center;
 
+    padding: 25px;
+}
 
-        .container {
 
-            width: 100%;
+.container {
 
-            max-width: 650px;
-        }
+    width: 100%;
 
+    max-width: 800px;
 
-        .result-card {
+    background:
+        rgba(7, 18, 34, .97);
 
-            background:
-                linear-gradient(
-                    145deg,
-                    rgba(15, 23, 42, 0.98),
-                    rgba(8, 18, 35, 0.98)
-                );
+    border: 1px solid #1e6784;
 
-            border:
-                1px solid
-                rgba(56, 189, 248, 0.25);
+    border-radius: 22px;
 
-            border-radius: 25px;
+    padding: 35px;
 
-            padding: 40px;
+    box-shadow:
+        0 0 50px
+        rgba(0, 200, 255, .12);
+}
 
-            box-shadow:
-                0 30px 80px
-                rgba(0, 0, 0, 0.65);
 
-            text-align: center;
-        }
+.header {
 
+    text-align: center;
+}
 
-        .logo {
 
-            font-size: 14px;
+.logo {
 
-            letter-spacing: 3px;
+    color: #42d9ff;
 
-            color: #38bdf8;
+    font-size: 30px;
 
-            font-weight: 800;
+    font-weight: bold;
+}
 
-            margin-bottom: 15px;
-        }
 
+.subtitle {
 
-        h1 {
+    color: #91a8bb;
 
-            font-size: 30px;
+    margin-top: 8px;
+}
 
-            margin-bottom: 8px;
 
-            font-weight: 800;
-        }
+/* ==============================
+   STATUS CIRCLE
+   ============================== */
 
+.status {
 
-        .subtitle {
+    margin: 30px auto;
 
-            color: #94a3b8;
+    width: 210px;
 
-            font-size: 14px;
+    height: 210px;
 
-            margin-bottom: 30px;
-        }
+    border-radius: 50%;
 
+    display: flex;
 
-        .status-box {
+    flex-direction: column;
 
-            border-radius: 18px;
+    justify-content: center;
 
-            padding: 25px;
+    align-items: center;
 
-            margin-bottom: 25px;
-        }
+    border: 5px solid;
+}
 
 
-        .status-box.success {
+.status-icon {
 
-            background:
-                rgba(34, 197, 94, 0.08);
+    font-size: 65px;
 
-            border:
-                1px solid
-                rgba(34, 197, 94, 0.35);
-        }
+    font-weight: bold;
+}
 
 
-        .status-box.warning {
+.status-text {
 
-            background:
-                rgba(245, 158, 11, 0.08);
+    font-size: 22px;
 
-            border:
-                1px solid
-                rgba(245, 158, 11, 0.35);
-        }
+    font-weight: bold;
 
+    margin-top: 8px;
+}
 
-        .status-icon {
 
-            width: 65px;
+.approved {
 
-            height: 65px;
+    border-color: #00d99b;
 
-            border-radius: 50%;
+    color: #00e5a3;
 
-            display: flex;
+    box-shadow:
+        0 0 35px
+        rgba(0, 229, 163, .25);
+}
 
-            justify-content: center;
 
-            align-items: center;
+.rejected {
 
-            margin: 0 auto 15px;
+    border-color: #ff4d67;
 
-            font-size: 32px;
+    color: #ff647a;
 
-            font-weight: 800;
-        }
+    box-shadow:
+        0 0 35px
+        rgba(255, 77, 103, .25);
+}
 
 
-        .success .status-icon {
+.review {
 
-            background:
-                rgba(34, 197, 94, 0.15);
+    border-color: #ffb52e;
 
-            color: #4ade80;
-        }
+    color: #ffc04a;
 
+    box-shadow:
+        0 0 35px
+        rgba(255, 181, 46, .25);
+}
 
-        .warning .status-icon {
 
-            background:
-                rgba(245, 158, 11, 0.15);
+/* ==============================
+   INFORMATION CARD
+   ============================== */
 
-            color: #fbbf24;
-        }
+.card {
 
+    background: #0a192c;
 
-        .status-title {
+    border: 1px solid #1b425a;
 
-            font-size: 20px;
+    border-radius: 15px;
 
-            font-weight: 800;
+    padding: 22px;
 
-            margin-bottom: 8px;
-        }
+    margin-top: 20px;
+}
 
 
-        .status-message {
+.card-title {
 
-            color: #94a3b8;
+    color: #42d9ff;
 
-            font-size: 13px;
+    font-weight: bold;
 
-            line-height: 1.6;
-        }
+    margin-bottom: 18px;
 
+    font-size: 18px;
+}
 
-        .details {
 
-            text-align: left;
+.row {
 
-            border:
-                1px solid
-                rgba(148, 163, 184, 0.15);
+    display: flex;
 
-            border-radius: 16px;
+    justify-content: space-between;
 
-            overflow: hidden;
+    gap: 20px;
 
-            margin-bottom: 25px;
-        }
+    padding: 12px 0;
 
+    border-bottom: 1px solid #173247;
+}
 
-        .detail-row {
 
-            display: flex;
+.row:last-child {
 
-            justify-content: space-between;
+    border-bottom: none;
+}
 
-            gap: 20px;
 
-            padding: 17px 20px;
+.label {
 
-            border-bottom:
-                1px solid
-                rgba(148, 163, 184, 0.1);
-        }
+    color: #8fa5b8;
+}
 
 
-        .detail-row:last-child {
+.value {
 
-            border-bottom: none;
-        }
+    text-align: right;
 
+    font-weight: bold;
+}
 
-        .detail-label {
 
-            color: #64748b;
+/* ==============================
+   SCORE
+   ============================== */
 
-            font-size: 13px;
+.score {
 
-            font-weight: 600;
-        }
+    font-size: 30px;
 
+    color: #42d9ff;
 
-        .detail-value {
+    text-align: center;
 
-            color: #e2e8f0;
+    margin: 15px 0;
+}
 
-            font-size: 14px;
 
-            font-weight: 700;
+/* ==============================
+   REASONS
+   ============================== */
 
-            text-align: right;
+.reason {
 
-            word-break: break-word;
-        }
+    padding: 10px 0;
 
+    color: #c4d2dd;
 
-        .ai-badge {
+    border-bottom:
+        1px solid #173247;
+}
 
-            display: inline-block;
 
-            padding: 6px 12px;
+.reason:last-child {
 
-            border-radius: 20px;
+    border-bottom: none;
+}
 
-            font-size: 11px;
 
-            font-weight: 800;
+/* ==============================
+   NOTICE
+   ============================== */
 
-            letter-spacing: 0.5px;
-        }
+.notice {
 
+    margin-top: 25px;
 
-        .ai-safe {
+    padding: 15px;
 
-            background:
-                rgba(34, 197, 94, 0.12);
+    border-radius: 10px;
 
-            color: #4ade80;
-        }
+    background: #101e2e;
 
+    border: 1px solid #31516a;
 
-        .ai-risk {
+    color: #9eb2c2;
 
-            background:
-                rgba(245, 158, 11, 0.12);
+    font-size: 13px;
 
-            color: #fbbf24;
-        }
+    line-height: 1.6;
+}
 
 
-        .notice {
+/* ==============================
+   BUTTONS
+   ============================== */
 
-            background:
-                rgba(56, 189, 248, 0.06);
+.buttons {
 
-            border:
-                1px solid
-                rgba(56, 189, 248, 0.15);
+    display: flex;
 
-            border-radius: 14px;
+    gap: 15px;
 
-            padding: 15px;
+    margin-top: 25px;
+}
 
-            color: #94a3b8;
 
-            font-size: 12px;
+.buttons a {
 
-            line-height: 1.6;
+    flex: 1;
 
-            text-align: left;
+    text-align: center;
 
-            margin-bottom: 25px;
-        }
+    padding: 14px;
 
+    border-radius: 10px;
 
-        .buttons {
+    text-decoration: none;
 
-            display: flex;
+    font-weight: bold;
+}
 
-            gap: 12px;
-        }
 
+.verify {
 
-        .btn {
+    background:
+        linear-gradient(
+            90deg,
+            #00a8e8,
+            #00d4aa
+        );
 
-            flex: 1;
+    color: #001018;
+}
 
-            padding: 14px 20px;
 
-            border-radius: 12px;
+.home {
 
-            text-decoration: none;
+    background: #14283c;
 
-            font-size: 14px;
+    color: white;
 
-            font-weight: 700;
+    border: 1px solid #31516a;
+}
 
-            transition: 0.3s;
-        }
 
+/* ==============================
+   MOBILE
+   ============================== */
 
-        .btn-primary {
+@media(max-width:600px) {
 
-            background:
-                linear-gradient(
-                    135deg,
-                    #2563eb,
-                    #9333ea
-                );
+    .container {
 
-            color: white;
-        }
+        padding: 22px;
+    }
 
 
-        .btn-secondary {
+    .row {
 
-            background:
-                rgba(56, 189, 248, 0.06);
+        flex-direction: column;
 
-            border:
-                1px solid
-                rgba(56, 189, 248, 0.3);
+        gap: 5px;
+    }
 
-            color: #38bdf8;
-        }
 
+    .value {
 
-        .btn:hover {
+        text-align: left;
+    }
 
-            transform:
-                translateY(-2px);
-        }
 
+    .buttons {
 
-        @media (max-width: 600px) {
+        flex-direction: column;
+    }
+}
 
-            .result-card {
-
-                padding: 25px;
-            }
-
-
-            h1 {
-
-                font-size: 25px;
-            }
-
-
-            .detail-row {
-
-                flex-direction: column;
-
-                gap: 5px;
-            }
-
-
-            .detail-value {
-
-                text-align: left;
-            }
-
-
-            .buttons {
-
-                flex-direction: column;
-            }
-        }
-
-    </style>
+</style>
 
 </head>
 
@@ -551,172 +480,327 @@ $safe_aadhaar =
 <div class="container">
 
 
-    <div class="result-card">
+    <!-- HEADER -->
 
+    <div class="header">
 
         <div class="logo">
-            ENTERPRISE DIGIVERIFY
+
+            Enterprise DigiVerify
+
         </div>
-
-
-        <h1>
-            Verification Result
-        </h1>
 
 
         <div class="subtitle">
-            AI-assisted document screening
+
+            AI-Assisted Document Verification Result
+
+        </div>
+
+    </div>
+
+
+    <!-- STATUS -->
+
+    <div
+        class="status <?php
+        echo htmlspecialchars($statusClass);
+        ?>"
+    >
+
+        <div class="status-icon">
+
+            <?php
+            echo htmlspecialchars($statusIcon);
+            ?>
+
         </div>
 
 
-        <!-- STATUS -->
+        <div class="status-text">
 
-        <div
-            class="status-box <?php echo $status_class; ?>"
+            <?php
+            echo htmlspecialchars($statusTitle);
+            ?>
+
+        </div>
+
+    </div>
+
+
+    <!-- DOCUMENT INFORMATION -->
+
+    <div class="card">
+
+        <div class="card-title">
+
+            Document Information
+
+        </div>
+
+
+        <div class="row">
+
+            <div class="label">
+
+                Document Type
+
+            </div>
+
+
+            <div class="value">
+
+                Aadhaar
+
+            </div>
+
+        </div>
+
+
+        <div class="row">
+
+            <div class="label">
+
+                Detected Name
+
+            </div>
+
+
+            <div class="value">
+
+                <?php
+
+                echo htmlspecialchars(
+                    $name !== ''
+                        ? $name
+                        : 'NOT DETECTED'
+                );
+
+                ?>
+
+            </div>
+
+        </div>
+
+
+        <div class="row">
+
+            <div class="label">
+
+                Aadhaar Number
+
+            </div>
+
+
+            <div class="value">
+
+                <?php
+
+                echo htmlspecialchars(
+                    $aadhaar
+                );
+
+                ?>
+
+            </div>
+
+        </div>
+
+
+        <div class="row">
+
+            <div class="label">
+
+                OCR Engine
+
+            </div>
+
+
+            <div class="value">
+
+                Tesseract.js
+
+            </div>
+
+        </div>
+
+
+        <div class="row">
+
+            <div class="label">
+
+                Verification Type
+
+            </div>
+
+
+            <div class="value">
+
+                AI-Assisted Screening
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- SCORE -->
+
+    <div class="card">
+
+        <div class="card-title">
+
+            AI Screening Score
+
+        </div>
+
+
+        <div class="score">
+
+            <?php
+            echo htmlspecialchars($score);
+            ?>
+
+            / 100
+
+        </div>
+
+    </div>
+
+
+    <!-- ANALYSIS -->
+
+    <div class="card">
+
+        <div class="card-title">
+
+            Verification Analysis
+
+        </div>
+
+
+        <?php
+
+        if (count($reasons) > 0):
+
+            foreach ($reasons as $reason):
+
+        ?>
+
+            <div class="reason">
+
+                <?php
+
+                echo htmlspecialchars(
+                    trim($reason)
+                );
+
+                ?>
+
+            </div>
+
+        <?php
+
+            endforeach;
+
+        else:
+
+        ?>
+
+            <div class="reason">
+
+                No additional analysis
+                information available.
+
+            </div>
+
+        <?php endif; ?>
+
+    </div>
+
+
+    <!-- NOTICE -->
+
+    <div class="notice">
+
+        <strong>Verification Result:</strong>
+
+        <br><br>
+
+
+        <?php
+
+        if ($status === 'APPROVED'):
+
+        ?>
+
+            This document has passed the configured
+            DigiVerify AI-assisted screening rules.
+
+        <?php
+
+        elseif ($status === 'REJECTED'):
+
+        ?>
+
+            This document failed the configured
+            DigiVerify screening rules or contained
+            suspicious indicators.
+
+        <?php
+
+        else:
+
+        ?>
+
+            The available evidence was not sufficient
+            for automatic approval. Manual verification
+            is recommended.
+
+        <?php endif; ?>
+
+
+        <br><br>
+
+
+        <strong>Important:</strong>
+
+        This is a project-level document screening
+        result. It is
+
+        <strong>
+            NOT official UIDAI authentication
+        </strong>
+
+        and does not confirm government-issued
+        authenticity.
+
+    </div>
+
+
+    <!-- BUTTONS -->
+
+    <div class="buttons">
+
+        <a
+            class="verify"
+            href="upload.php"
         >
 
-            <div class="status-icon">
-                <?php echo $status_icon; ?>
-            </div>
+            Verify Another Document
+
+        </a>
 
 
-            <div class="status-title">
-                <?php echo $status; ?>
-            </div>
+        <a
+            class="home"
+            href="../index.php"
+        >
 
+            Home
 
-            <div class="status-message">
-                <?php echo $status_message; ?>
-            </div>
-
-        </div>
-
-
-        <!-- DETAILS -->
-
-        <div class="details">
-
-
-            <div class="detail-row">
-
-                <div class="detail-label">
-                    Document Type
-                </div>
-
-                <div class="detail-value">
-                    Aadhaar Card
-                </div>
-
-            </div>
-
-
-            <div class="detail-row">
-
-                <div class="detail-label">
-                    Detected Name
-                </div>
-
-                <div class="detail-value">
-                    <?php echo $safe_name; ?>
-                </div>
-
-            </div>
-
-
-            <div class="detail-row">
-
-                <div class="detail-label">
-                    Aadhaar Number
-                </div>
-
-                <div class="detail-value">
-                    <?php echo $safe_aadhaar; ?>
-                </div>
-
-            </div>
-
-
-            <div class="detail-row">
-
-                <div class="detail-label">
-                    OCR Engine
-                </div>
-
-                <div class="detail-value">
-                    Tesseract.js
-                </div>
-
-            </div>
-
-
-            <div class="detail-row">
-
-                <div class="detail-label">
-                    AI Screening
-                </div>
-
-                <div class="detail-value">
-
-                    <?php if ($is_ai === 'true'): ?>
-
-                        <span class="ai-badge ai-risk">
-                            REVIEW REQUIRED
-                        </span>
-
-                    <?php else: ?>
-
-                        <span class="ai-badge ai-safe">
-                            BASIC SCREENING PASSED
-                        </span>
-
-                    <?php endif; ?>
-
-                </div>
-
-            </div>
-
-
-        </div>
-
-
-        <!-- NOTICE -->
-
-        <div class="notice">
-
-            <strong>Verification Notice:</strong><br>
-
-            This result is based on OCR extraction and
-            basic document screening performed by the
-            DigiVerify application. It does not by itself
-            constitute official Aadhaar authentication or
-            confirmation from UIDAI.
-
-        </div>
-
-
-        <!-- BUTTONS -->
-
-        <div class="buttons">
-
-
-            <a
-                href="upload.php"
-                class="btn btn-primary"
-            >
-                Verify Another Document
-            </a>
-
-
-            <a
-                href="/"
-                class="btn btn-secondary"
-            >
-                Home
-            </a>
-
-
-        </div>
-
+        </a>
 
     </div>
 
