@@ -1,116 +1,729 @@
 <?php
-// 1. एरर रिपोर्टिंग ऑन रखना ताकि कोई गलती हो तो स्क्रीन पर दिखे
+
 error_reporting(E_ALL);
 ini_set('display_errors', '1');
 
-// URL पैरामीटर से असली पढ़ा हुआ डेटा सुरक्षित निकालना
-$name = (isset($_GET['name']) && !empty($_GET['name'])) ? htmlspecialchars(urldecode($_GET['name'])) : "NOT DETECTED";
-$aadhaar_no = (isset($_GET['aadhaar']) && !empty($_GET['aadhaar'])) ? htmlspecialchars(urldecode($_GET['aadhaar'])) : "XXXX XXXX XXXX";
-$is_ai = (isset($_GET['is_ai']) && $_GET['is_ai'] === 'true') ? true : false;
+/*
+|--------------------------------------------------------------------------
+| DigiVerify - Verification Result
+|--------------------------------------------------------------------------
+| Receives OCR results from upload.php
+|--------------------------------------------------------------------------
+*/
 
-// एआई (नकली) या असली के आधार पर वैल्यूज बदलना
-$doc_type = $is_ai ? "AADHAAR CARD (DUPLICATE / AI)" : "AADHAAR CARD (UIDAI)";
-$accuracy = $is_ai ? "Fake Template" : "99.2% Accuracy";
-$confidence = $is_ai ? "0% - Fraud Risk" : "97.5% Confidence";
+
+// =====================================================
+// GET DATA FROM UPLOAD.PHP
+// =====================================================
+
+$detected_name = isset($_GET['name'])
+    ? trim($_GET['name'])
+    : 'NOT DETECTED';
+
+$aadhaar_no = isset($_GET['aadhaar'])
+    ? trim($_GET['aadhaar'])
+    : 'XXXX XXXX XXXX';
+
+$is_ai = isset($_GET['is_ai'])
+    ? strtolower(trim($_GET['is_ai']))
+    : 'false';
+
+
+// =====================================================
+// BASIC VALIDATION
+// =====================================================
+
+if ($detected_name === '') {
+    $detected_name = 'NOT DETECTED';
+}
+
+if ($aadhaar_no === '') {
+    $aadhaar_no = 'XXXX XXXX XXXX';
+}
+
+
+// =====================================================
+// DETERMINE STATUS
+// =====================================================
+
+if ($is_ai === 'true') {
+
+    $status = 'REVIEW REQUIRED';
+
+    $status_class = 'warning';
+
+    $status_icon = '⚠';
+
+    $status_message =
+        'The uploaded document contains text patterns ' .
+        'that require additional review.';
+
+} else {
+
+    $status = 'OCR SCREENING PASSED';
+
+    $status_class = 'success';
+
+    $status_icon = '✓';
+
+    $status_message =
+        'The document passed the basic OCR-based ' .
+        'screening checks.';
+}
+
+
+// =====================================================
+// MASK AADHAAR NUMBER
+// =====================================================
+
+$display_aadhaar = $aadhaar_no;
+
+if (
+    preg_match(
+        '/^(\d{4})\s+(\d{4})\s+(\d{4})$/',
+        $aadhaar_no,
+        $matches
+    )
+) {
+
+    $display_aadhaar =
+        'XXXX XXXX ' . $matches[3];
+}
+
+
+// =====================================================
+// SAFE OUTPUT
+// =====================================================
+
+$safe_name =
+    htmlspecialchars(
+        $detected_name,
+        ENT_QUOTES,
+        'UTF-8'
+    );
+
+$safe_aadhaar =
+    htmlspecialchars(
+        $display_aadhaar,
+        ENT_QUOTES,
+        'UTF-8'
+    );
+
 ?>
 
 <!DOCTYPE html>
+
 <html lang="en">
+
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verification Result | DigiVerify</title>
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        DigiVerify | Verification Result
+    </title>
+
+
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; }
-        body { background-color: #08111f; color: #ffffff; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
-        .result-card { background: linear-gradient(145deg, #0f172a, #0b1324); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 24px; padding: 40px 30px; width: 100%; max-width: 520px; text-align: center; box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7); }
-        
-        .circle { width: 70px; height: 70px; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin: 0 auto 20px auto; }
-        .success-circle { border: 3px solid #10b981; }
-        .success-circle::after { content: ''; width: 15px; height: 30px; border: solid #10b981; border-width: 0 4px 4px 0; transform: rotate(45deg); margin-top: -5px; }
-        
-        .fail-circle { border: 3px solid #ef4444; position: relative; }
-        .fail-circle::before, .fail-circle::after { content: ''; position: absolute; width: 4px; height: 35px; background-color: #ef4444; }
-        .fail-circle::before { transform: rotate(45deg); }
-        .fail-circle::after { transform: rotate(-45deg); }
 
-        .result-card h2 { font-size: 26px; margin-bottom: 15px; font-weight: 700; }
-        
-        .status-badge { padding: 14px 15px; border-radius: 12px; font-size: 13px; font-weight: 600; line-height: 1.5; margin-bottom: 30px; text-align: center; }
-        .status-success { background-color: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: #10b981; }
-        .status-fail { background-color: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; }
-        
-        .section-title { color: #38bdf8; font-size: 11px; font-weight: 700; text-align: left; letter-spacing: 1px; margin: 20px 0 10px 0; text-transform: uppercase; }
-        .info-table { width: 100%; background-color: rgba(19, 29, 52, 0.4); border: 1px solid rgba(56, 189, 248, 0.15); border-radius: 14px; border-collapse: separate; border-spacing: 0; margin-bottom: 15px; overflow: hidden; }
-        .info-table td { padding: 16px 20px; text-align: left; font-size: 14px; border-bottom: 1px solid rgba(56, 189, 248, 0.1); }
-        .info-table tr:last-child td { border-bottom: none; }
-        .label-col { color: #9fb3d6; width: 45%; }
-        .value-col { font-weight: 600; text-align: right; color: #ffffff; word-break: break-all; }
-        
-        .name-highlight { color: #a5b4fc; }
-        .accuracy-badge { color: #10b981; font-weight: 700; }
-        .fail-badge { color: #ef4444; font-weight: 700; }
-        .confidence-badge { color: #38bdf8; font-weight: 700; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-        .btn-container { display: flex; flex-direction: column; gap: 12px; margin-top: 30px; }
-        .btn-primary { background: linear-gradient(135deg, #2563eb, #9333ea); border: none; color: white; padding: 14px 20px; font-size: 15px; font-weight: 700; border-radius: 12px; text-decoration: none; display: block; box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3); }
-        .btn-secondary { background: transparent; border: 2px solid rgba(56, 189, 248, 0.4); color: #38bdf8; padding: 14px 20px; font-size: 15px; font-weight: 700; border-radius: 12px; text-decoration: none; display: block; transition: 0.3s; }
+
+        body {
+
+            font-family:
+                'Segoe UI',
+                Arial,
+                sans-serif;
+
+            background:
+                radial-gradient(
+                    circle at top,
+                    #10254a 0%,
+                    #08111f 45%,
+                    #040914 100%
+                );
+
+            color: #ffffff;
+
+            min-height: 100vh;
+
+            display: flex;
+
+            justify-content: center;
+
+            align-items: center;
+
+            padding: 30px;
+        }
+
+
+        .container {
+
+            width: 100%;
+
+            max-width: 650px;
+        }
+
+
+        .result-card {
+
+            background:
+                linear-gradient(
+                    145deg,
+                    rgba(15, 23, 42, 0.98),
+                    rgba(8, 18, 35, 0.98)
+                );
+
+            border:
+                1px solid
+                rgba(56, 189, 248, 0.25);
+
+            border-radius: 25px;
+
+            padding: 40px;
+
+            box-shadow:
+                0 30px 80px
+                rgba(0, 0, 0, 0.65);
+
+            text-align: center;
+        }
+
+
+        .logo {
+
+            font-size: 14px;
+
+            letter-spacing: 3px;
+
+            color: #38bdf8;
+
+            font-weight: 800;
+
+            margin-bottom: 15px;
+        }
+
+
+        h1 {
+
+            font-size: 30px;
+
+            margin-bottom: 8px;
+
+            font-weight: 800;
+        }
+
+
+        .subtitle {
+
+            color: #94a3b8;
+
+            font-size: 14px;
+
+            margin-bottom: 30px;
+        }
+
+
+        .status-box {
+
+            border-radius: 18px;
+
+            padding: 25px;
+
+            margin-bottom: 25px;
+        }
+
+
+        .status-box.success {
+
+            background:
+                rgba(34, 197, 94, 0.08);
+
+            border:
+                1px solid
+                rgba(34, 197, 94, 0.35);
+        }
+
+
+        .status-box.warning {
+
+            background:
+                rgba(245, 158, 11, 0.08);
+
+            border:
+                1px solid
+                rgba(245, 158, 11, 0.35);
+        }
+
+
+        .status-icon {
+
+            width: 65px;
+
+            height: 65px;
+
+            border-radius: 50%;
+
+            display: flex;
+
+            justify-content: center;
+
+            align-items: center;
+
+            margin: 0 auto 15px;
+
+            font-size: 32px;
+
+            font-weight: 800;
+        }
+
+
+        .success .status-icon {
+
+            background:
+                rgba(34, 197, 94, 0.15);
+
+            color: #4ade80;
+        }
+
+
+        .warning .status-icon {
+
+            background:
+                rgba(245, 158, 11, 0.15);
+
+            color: #fbbf24;
+        }
+
+
+        .status-title {
+
+            font-size: 20px;
+
+            font-weight: 800;
+
+            margin-bottom: 8px;
+        }
+
+
+        .status-message {
+
+            color: #94a3b8;
+
+            font-size: 13px;
+
+            line-height: 1.6;
+        }
+
+
+        .details {
+
+            text-align: left;
+
+            border:
+                1px solid
+                rgba(148, 163, 184, 0.15);
+
+            border-radius: 16px;
+
+            overflow: hidden;
+
+            margin-bottom: 25px;
+        }
+
+
+        .detail-row {
+
+            display: flex;
+
+            justify-content: space-between;
+
+            gap: 20px;
+
+            padding: 17px 20px;
+
+            border-bottom:
+                1px solid
+                rgba(148, 163, 184, 0.1);
+        }
+
+
+        .detail-row:last-child {
+
+            border-bottom: none;
+        }
+
+
+        .detail-label {
+
+            color: #64748b;
+
+            font-size: 13px;
+
+            font-weight: 600;
+        }
+
+
+        .detail-value {
+
+            color: #e2e8f0;
+
+            font-size: 14px;
+
+            font-weight: 700;
+
+            text-align: right;
+
+            word-break: break-word;
+        }
+
+
+        .ai-badge {
+
+            display: inline-block;
+
+            padding: 6px 12px;
+
+            border-radius: 20px;
+
+            font-size: 11px;
+
+            font-weight: 800;
+
+            letter-spacing: 0.5px;
+        }
+
+
+        .ai-safe {
+
+            background:
+                rgba(34, 197, 94, 0.12);
+
+            color: #4ade80;
+        }
+
+
+        .ai-risk {
+
+            background:
+                rgba(245, 158, 11, 0.12);
+
+            color: #fbbf24;
+        }
+
+
+        .notice {
+
+            background:
+                rgba(56, 189, 248, 0.06);
+
+            border:
+                1px solid
+                rgba(56, 189, 248, 0.15);
+
+            border-radius: 14px;
+
+            padding: 15px;
+
+            color: #94a3b8;
+
+            font-size: 12px;
+
+            line-height: 1.6;
+
+            text-align: left;
+
+            margin-bottom: 25px;
+        }
+
+
+        .buttons {
+
+            display: flex;
+
+            gap: 12px;
+        }
+
+
+        .btn {
+
+            flex: 1;
+
+            padding: 14px 20px;
+
+            border-radius: 12px;
+
+            text-decoration: none;
+
+            font-size: 14px;
+
+            font-weight: 700;
+
+            transition: 0.3s;
+        }
+
+
+        .btn-primary {
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #2563eb,
+                    #9333ea
+                );
+
+            color: white;
+        }
+
+
+        .btn-secondary {
+
+            background:
+                rgba(56, 189, 248, 0.06);
+
+            border:
+                1px solid
+                rgba(56, 189, 248, 0.3);
+
+            color: #38bdf8;
+        }
+
+
+        .btn:hover {
+
+            transform:
+                translateY(-2px);
+        }
+
+
+        @media (max-width: 600px) {
+
+            .result-card {
+
+                padding: 25px;
+            }
+
+
+            h1 {
+
+                font-size: 25px;
+            }
+
+
+            .detail-row {
+
+                flex-direction: column;
+
+                gap: 5px;
+            }
+
+
+            .detail-value {
+
+                text-align: left;
+            }
+
+
+            .buttons {
+
+                flex-direction: column;
+            }
+        }
+
     </style>
+
 </head>
+
+
 <body>
 
-<div class="result-card">
-    <?php if ($is_ai): ?>
-        <div class="circle fail-circle"></div>
-        <h2 style="color: #ef4444;">Document Rejected</h2>
-        <div class="status-badge status-fail">
-            REJECTED: Fake Template / Copy Pattern Detected! Document failed real-time integrity verification.
+
+<div class="container">
+
+
+    <div class="result-card">
+
+
+        <div class="logo">
+            ENTERPRISE DIGIVERIFY
         </div>
-    <?php else: ?>
-        <div class="circle success-circle"></div>
-        <h2>Document Authenticated</h2>
-        <div class="status-badge status-success">
-            APPROVED: Document successfully read and validated via Live OCR matching database records.
+
+
+        <h1>
+            Verification Result
+        </h1>
+
+
+        <div class="subtitle">
+            AI-assisted document screening
         </div>
-    <?php endif; ?>
-    
-    <div class="section-title">Layer 1: Extracted OCR Metrics</div>
-    <table class="info-table">
-        <tr>
-            <td class="label-col">Detected Name</td>
-            <td class="value-col name-highlight"><?php echo $name; ?></td>
-        </tr>
-        <tr>
-            <td class="label-col">Aadhaar Number</td>
-            <td class="value-col" style="color: #cbd5e1;"><?php echo $aadhaar_no; ?></td>
-        </tr>
-        <tr>
-            <td class="label-col">Identified Document</td>
-            <td class="value-col"><?php echo $doc_type; ?></td>
-        </tr>
-        <tr>
-            <td class="label-col">Processing Status</td>
-            <td class="value-col <?php echo $is_ai ? 'fail-badge' : 'accuracy-badge'; ?>">
-                <?php echo $accuracy; ?>
-            </td>
-        </tr>
-    </table>
-    
-    <div class="section-title">Layer 2: Biometric Validation</div>
-    <table class="info-table">
-        <tr>
-            <td class="label-col">Face Verification Match</td>
-            <td class="value-col confidence-badge"><?php echo $confidence; ?></td>
-        </tr>
-    </table>
-    
-    <div class="btn-container">
-        <?php if (!$is_ai): ?>
-            <a href="#" class="btn-primary">Continue Process</a>
-        <?php endif; ?>
-        <a href="upload.php" class="btn-secondary">Verify Another Card</a>
+
+
+        <!-- STATUS -->
+
+        <div
+            class="status-box <?php echo $status_class; ?>"
+        >
+
+            <div class="status-icon">
+                <?php echo $status_icon; ?>
+            </div>
+
+
+            <div class="status-title">
+                <?php echo $status; ?>
+            </div>
+
+
+            <div class="status-message">
+                <?php echo $status_message; ?>
+            </div>
+
+        </div>
+
+
+        <!-- DETAILS -->
+
+        <div class="details">
+
+
+            <div class="detail-row">
+
+                <div class="detail-label">
+                    Document Type
+                </div>
+
+                <div class="detail-value">
+                    Aadhaar Card
+                </div>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <div class="detail-label">
+                    Detected Name
+                </div>
+
+                <div class="detail-value">
+                    <?php echo $safe_name; ?>
+                </div>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <div class="detail-label">
+                    Aadhaar Number
+                </div>
+
+                <div class="detail-value">
+                    <?php echo $safe_aadhaar; ?>
+                </div>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <div class="detail-label">
+                    OCR Engine
+                </div>
+
+                <div class="detail-value">
+                    Tesseract.js
+                </div>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <div class="detail-label">
+                    AI Screening
+                </div>
+
+                <div class="detail-value">
+
+                    <?php if ($is_ai === 'true'): ?>
+
+                        <span class="ai-badge ai-risk">
+                            REVIEW REQUIRED
+                        </span>
+
+                    <?php else: ?>
+
+                        <span class="ai-badge ai-safe">
+                            BASIC SCREENING PASSED
+                        </span>
+
+                    <?php endif; ?>
+
+                </div>
+
+            </div>
+
+
+        </div>
+
+
+        <!-- NOTICE -->
+
+        <div class="notice">
+
+            <strong>Verification Notice:</strong><br>
+
+            This result is based on OCR extraction and
+            basic document screening performed by the
+            DigiVerify application. It does not by itself
+            constitute official Aadhaar authentication or
+            confirmation from UIDAI.
+
+        </div>
+
+
+        <!-- BUTTONS -->
+
+        <div class="buttons">
+
+
+            <a
+                href="upload.php"
+                class="btn btn-primary"
+            >
+                Verify Another Document
+            </a>
+
+
+            <a
+                href="/"
+                class="btn btn-secondary"
+            >
+                Home
+            </a>
+
+
+        </div>
+
+
     </div>
+
+
 </div>
 
+
 </body>
+
 </html>
