@@ -4,74 +4,80 @@ error_reporting(E_ALL);
 ini_set('display_errors', '1');
 
 
-/* ==============================
-   GET RESULT DATA
-   ============================== */
-
 $status = isset($_GET['status'])
     ? strtoupper(trim($_GET['status']))
     : 'MANUAL REVIEW';
-
 
 $score = isset($_GET['score'])
     ? intval($_GET['score'])
     : 0;
 
-
 $name = isset($_GET['name'])
     ? trim($_GET['name'])
     : 'NOT DETECTED';
-
 
 $aadhaar = isset($_GET['aadhaar'])
     ? trim($_GET['aadhaar'])
     : 'XXXX XXXX XXXX';
 
-
 $reasonString = isset($_GET['reason'])
     ? $_GET['reason']
     : '';
 
+$warningString = isset($_GET['warning'])
+    ? $_GET['warning']
+    : '';
 
 $reasons = [];
+$warnings = [];
 
 if ($reasonString !== '') {
+    $reasons = explode('|', $reasonString);
+}
 
-    $reasons =
-        explode(
-            '|',
-            $reasonString
-        );
+if ($warningString !== '') {
+    $warnings = explode('|', $warningString);
 }
 
 
-/* ==============================
-   STATUS DESIGN
-   ============================== */
+/*
+=========================================================
+STATUS
+=========================================================
+*/
 
 if ($status === 'APPROVED') {
 
-    $statusTitle = 'APPROVED';
+    $title = 'APPROVED';
 
-    $statusClass = 'approved';
+    $subtitle =
+        'AI SCREENING PASSED';
 
-    $statusIcon = '✓';
+    $class = 'approved';
+
+    $icon = '✓';
 
 } elseif ($status === 'REJECTED') {
 
-    $statusTitle = 'REJECTED';
+    $title = 'REJECTED';
 
-    $statusClass = 'rejected';
+    $subtitle =
+        'SCREENING FAILED';
 
-    $statusIcon = '✕';
+    $class = 'rejected';
+
+    $icon = '✕';
 
 } else {
 
-    $statusTitle = 'MANUAL REVIEW';
+    $title = 'MANUAL REVIEW';
 
-    $statusClass = 'review';
+    $subtitle =
+        'ADDITIONAL CHECK REQUIRED';
 
-    $statusIcon = '!';
+    $class = 'review';
+
+    $icon = '!';
 }
 
 ?>
@@ -90,16 +96,14 @@ if ($status === 'APPROVED') {
 >
 
 <title>
-DigiVerify - Verification Result
+Enterprise DigiVerify - Verification Result
 </title>
-
 
 <style>
 
 * {
     box-sizing: border-box;
 }
-
 
 body {
 
@@ -124,24 +128,18 @@ body {
 
     color: white;
 
-    display: flex;
-
-    justify-content: center;
-
-    align-items: center;
-
     padding: 25px;
 }
-
 
 .container {
 
     width: 100%;
 
-    max-width: 800px;
+    max-width: 850px;
 
-    background:
-        rgba(7, 18, 34, .97);
+    margin: auto;
+
+    background: rgba(7,18,34,.97);
 
     border: 1px solid #1e6784;
 
@@ -151,45 +149,42 @@ body {
 
     box-shadow:
         0 0 50px
-        rgba(0, 200, 255, .12);
+        rgba(0,200,255,.12);
 }
-
 
 .header {
 
     text-align: center;
 }
 
-
 .logo {
 
     color: #42d9ff;
 
-    font-size: 30px;
+    font-size: 31px;
 
     font-weight: bold;
 }
 
-
 .subtitle {
 
-    color: #91a8bb;
-
     margin-top: 8px;
+
+    color: #91a8bb;
 }
 
 
-/* ==============================
-   STATUS CIRCLE
-   ============================== */
+/*
+STATUS
+*/
 
 .status {
 
+    width: 230px;
+
+    height: 230px;
+
     margin: 30px auto;
-
-    width: 210px;
-
-    height: 210px;
 
     border-radius: 50%;
 
@@ -204,64 +199,68 @@ body {
     border: 5px solid;
 }
 
-
 .status-icon {
 
-    font-size: 65px;
+    font-size: 70px;
 
     font-weight: bold;
 }
 
+.status-title {
 
-.status-text {
-
-    font-size: 22px;
+    font-size: 24px;
 
     font-weight: bold;
+
+    margin-top: 5px;
+}
+
+.status-subtitle {
+
+    font-size: 12px;
 
     margin-top: 8px;
-}
 
+    letter-spacing: 1px;
+}
 
 .approved {
 
-    border-color: #00d99b;
-
     color: #00e5a3;
 
-    box-shadow:
-        0 0 35px
-        rgba(0, 229, 163, .25);
-}
+    border-color: #00d99b;
 
+    box-shadow:
+        0 0 40px
+        rgba(0,229,163,.25);
+}
 
 .rejected {
 
-    border-color: #ff4d67;
-
     color: #ff647a;
 
-    box-shadow:
-        0 0 35px
-        rgba(255, 77, 103, .25);
-}
+    border-color: #ff4d67;
 
+    box-shadow:
+        0 0 40px
+        rgba(255,77,103,.25);
+}
 
 .review {
 
-    border-color: #ffb52e;
-
     color: #ffc04a;
 
+    border-color: #ffb52e;
+
     box-shadow:
-        0 0 35px
-        rgba(255, 181, 46, .25);
+        0 0 40px
+        rgba(255,181,46,.25);
 }
 
 
-/* ==============================
-   INFORMATION CARD
-   ============================== */
+/*
+CARDS
+*/
 
 .card {
 
@@ -271,23 +270,21 @@ body {
 
     border-radius: 15px;
 
-    padding: 22px;
+    padding: 23px;
 
     margin-top: 20px;
 }
-
 
 .card-title {
 
     color: #42d9ff;
 
+    font-size: 19px;
+
     font-weight: bold;
 
     margin-bottom: 18px;
-
-    font-size: 18px;
 }
-
 
 .row {
 
@@ -295,25 +292,22 @@ body {
 
     justify-content: space-between;
 
-    gap: 20px;
-
-    padding: 12px 0;
+    padding: 13px 0;
 
     border-bottom: 1px solid #173247;
-}
 
+    gap: 20px;
+}
 
 .row:last-child {
 
-    border-bottom: none;
+    border-bottom: 0;
 }
-
 
 .label {
 
     color: #8fa5b8;
 }
-
 
 .value {
 
@@ -323,70 +317,91 @@ body {
 }
 
 
-/* ==============================
-   SCORE
-   ============================== */
+/*
+SCORE
+*/
 
-.score {
-
-    font-size: 30px;
-
-    color: #42d9ff;
+.score-number {
 
     text-align: center;
 
-    margin: 15px 0;
+    font-size: 42px;
+
+    color: #42d9ff;
+
+    font-weight: bold;
+}
+
+.score-label {
+
+    text-align: center;
+
+    color: #8299aa;
+
+    margin-top: 5px;
 }
 
 
-/* ==============================
-   REASONS
-   ============================== */
+/*
+REASONS
+*/
 
 .reason {
 
-    padding: 10px 0;
+    padding: 11px 0;
+
+    border-bottom: 1px solid #173247;
 
     color: #c4d2dd;
-
-    border-bottom:
-        1px solid #173247;
 }
-
 
 .reason:last-child {
 
-    border-bottom: none;
+    border-bottom: 0;
+}
+
+.warning {
+
+    padding: 11px 0;
+
+    border-bottom: 1px solid #3b3020;
+
+    color: #ffc04a;
+}
+
+.warning:last-child {
+
+    border-bottom: 0;
 }
 
 
-/* ==============================
-   NOTICE
-   ============================== */
+/*
+NOTICE
+*/
 
 .notice {
 
-    margin-top: 25px;
+    margin-top: 20px;
 
-    padding: 15px;
-
-    border-radius: 10px;
+    padding: 18px;
 
     background: #101e2e;
 
     border: 1px solid #31516a;
 
+    border-radius: 12px;
+
     color: #9eb2c2;
 
     font-size: 13px;
 
-    line-height: 1.6;
+    line-height: 1.7;
 }
 
 
-/* ==============================
-   BUTTONS
-   ============================== */
+/*
+BUTTONS
+*/
 
 .buttons {
 
@@ -397,14 +412,13 @@ body {
     margin-top: 25px;
 }
 
-
 .buttons a {
 
     flex: 1;
 
-    text-align: center;
+    padding: 15px;
 
-    padding: 14px;
+    text-align: center;
 
     border-radius: 10px;
 
@@ -413,8 +427,9 @@ body {
     font-weight: bold;
 }
 
-
 .verify {
+
+    color: #001018;
 
     background:
         linear-gradient(
@@ -422,49 +437,34 @@ body {
             #00a8e8,
             #00d4aa
         );
-
-    color: #001018;
 }
-
 
 .home {
 
-    background: #14283c;
-
     color: white;
+
+    background: #14283c;
 
     border: 1px solid #31516a;
 }
 
 
-/* ==============================
-   MOBILE
-   ============================== */
-
 @media(max-width:600px) {
 
     .container {
-
         padding: 22px;
     }
 
-
     .row {
-
         flex-direction: column;
-
         gap: 5px;
     }
 
-
     .value {
-
         text-align: left;
     }
 
-
     .buttons {
-
         flex-direction: column;
     }
 }
@@ -473,9 +473,7 @@ body {
 
 </head>
 
-
 <body>
-
 
 <div class="container">
 
@@ -490,10 +488,9 @@ body {
 
         </div>
 
-
         <div class="subtitle">
 
-            AI-Assisted Document Verification Result
+            AI-Assisted Document Verification System
 
         </div>
 
@@ -504,23 +501,32 @@ body {
 
     <div
         class="status <?php
-        echo htmlspecialchars($statusClass);
+        echo htmlspecialchars($class);
         ?>"
     >
 
         <div class="status-icon">
 
             <?php
-            echo htmlspecialchars($statusIcon);
+            echo htmlspecialchars($icon);
             ?>
 
         </div>
 
 
-        <div class="status-text">
+        <div class="status-title">
 
             <?php
-            echo htmlspecialchars($statusTitle);
+            echo htmlspecialchars($title);
+            ?>
+
+        </div>
+
+
+        <div class="status-subtitle">
+
+            <?php
+            echo htmlspecialchars($subtitle);
             ?>
 
         </div>
@@ -528,13 +534,13 @@ body {
     </div>
 
 
-    <!-- DOCUMENT INFORMATION -->
+    <!-- DOCUMENT -->
 
     <div class="card">
 
         <div class="card-title">
 
-            Document Information
+            Document Analysis
 
         </div>
 
@@ -542,16 +548,11 @@ body {
         <div class="row">
 
             <div class="label">
-
                 Document Type
-
             </div>
-
 
             <div class="value">
-
                 Aadhaar
-
             </div>
 
         </div>
@@ -560,11 +561,8 @@ body {
         <div class="row">
 
             <div class="label">
-
                 Detected Name
-
             </div>
-
 
             <div class="value">
 
@@ -586,20 +584,13 @@ body {
         <div class="row">
 
             <div class="label">
-
                 Aadhaar Number
-
             </div>
-
 
             <div class="value">
 
                 <?php
-
-                echo htmlspecialchars(
-                    $aadhaar
-                );
-
+                echo htmlspecialchars($aadhaar);
                 ?>
 
             </div>
@@ -610,16 +601,11 @@ body {
         <div class="row">
 
             <div class="label">
-
                 OCR Engine
-
             </div>
 
-
             <div class="value">
-
                 Tesseract.js
-
             </div>
 
         </div>
@@ -628,16 +614,11 @@ body {
         <div class="row">
 
             <div class="label">
-
-                Verification Type
-
+                Screening Engine
             </div>
 
-
             <div class="value">
-
-                AI-Assisted Screening
-
+                DigiVerify AI Rules
             </div>
 
         </div>
@@ -650,32 +631,35 @@ body {
     <div class="card">
 
         <div class="card-title">
-
             AI Screening Score
+        </div>
+
+
+        <div class="score-number">
+
+            <?php
+            echo htmlspecialchars($score);
+            ?>/100
 
         </div>
 
 
-        <div class="score">
+        <div class="score-label">
 
-            <?php
-            echo htmlspecialchars($score);
-            ?>
-
-            / 100
+            Document Screening Confidence
 
         </div>
 
     </div>
 
 
-    <!-- ANALYSIS -->
+    <!-- POSITIVE CHECKS -->
 
     <div class="card">
 
         <div class="card-title">
 
-            Verification Analysis
+            Checks Passed
 
         </div>
 
@@ -689,6 +673,8 @@ body {
         ?>
 
             <div class="reason">
+
+                ✓
 
                 <?php
 
@@ -710,8 +696,7 @@ body {
 
             <div class="reason">
 
-                No additional analysis
-                information available.
+                No positive checks recorded.
 
             </div>
 
@@ -720,42 +705,65 @@ body {
     </div>
 
 
+    <!-- WARNINGS -->
+
+    <?php if (count($warnings) > 0): ?>
+
+    <div class="card">
+
+        <div class="card-title">
+
+            Additional Observations
+
+        </div>
+
+
+        <?php foreach ($warnings as $warning): ?>
+
+            <div class="warning">
+
+                !
+
+                <?php
+
+                echo htmlspecialchars(
+                    trim($warning)
+                );
+
+                ?>
+
+            </div>
+
+        <?php endforeach; ?>
+
+    </div>
+
+    <?php endif; ?>
+
+
     <!-- NOTICE -->
 
     <div class="notice">
 
-        <strong>Verification Result:</strong>
+        <strong>DigiVerify Result:</strong>
 
         <br><br>
 
+        <?php if ($status === 'APPROVED'): ?>
 
-        <?php
+            The document passed the configured
+            DigiVerify AI-assisted screening checks.
 
-        if ($status === 'APPROVED'):
+        <?php elseif ($status === 'REJECTED'): ?>
 
-        ?>
-
-            This document has passed the configured
-            DigiVerify AI-assisted screening rules.
-
-        <?php
-
-        elseif ($status === 'REJECTED'):
-
-        ?>
-
-            This document failed the configured
-            DigiVerify screening rules or contained
+            The document failed the configured
+            screening criteria or contained
             suspicious indicators.
 
-        <?php
+        <?php else: ?>
 
-        else:
-
-        ?>
-
-            The available evidence was not sufficient
-            for automatic approval. Manual verification
+            The available OCR evidence is insufficient
+            for automatic approval. Manual review
             is recommended.
 
         <?php endif; ?>
@@ -763,18 +771,12 @@ body {
 
         <br><br>
 
-
         <strong>Important:</strong>
 
-        This is a project-level document screening
-        result. It is
-
-        <strong>
-            NOT official UIDAI authentication
-        </strong>
-
-        and does not confirm government-issued
-        authenticity.
+        This is a project-level AI-assisted
+        document screening result. It does not
+        constitute official UIDAI authentication
+        or government confirmation of authenticity.
 
     </div>
 
@@ -788,7 +790,7 @@ body {
             href="upload.php"
         >
 
-            Verify Another Document
+            🔍 Verify Another Document
 
         </a>
 
@@ -798,15 +800,13 @@ body {
             href="../index.php"
         >
 
-            Home
+            🏠 Home
 
         </a>
 
     </div>
 
-
 </div>
-
 
 </body>
 
