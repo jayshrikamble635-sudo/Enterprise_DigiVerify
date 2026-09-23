@@ -12,6 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ocr_text'])) {
     $reasons = [];
     $warnings = [];
 
+
     /*
     =========================================================
     NORMALIZE OCR
@@ -20,6 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ocr_text'])) {
 
     $text = preg_replace('/[ \t]+/', ' ', $ocr);
     $upper = strtoupper($text);
+
 
     /*
     =========================================================
@@ -289,6 +291,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ocr_text'])) {
     }
 
     if ($detectedName === '' && $jsName !== '') {
+
         $detectedName = $jsName;
     }
 
@@ -405,120 +408,76 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ocr_text'])) {
     /*
     =========================================================
     FINAL DECISION
+    ONLY APPROVED OR REJECTED
     =========================================================
-
-    APPROVED:
-    Strong document-screening evidence.
-
-    MANUAL REVIEW:
-    Some information exists but evidence is incomplete.
-
-    REJECTED:
-    Strong suspicious indicators or extremely weak evidence.
     */
 
+    $hasAadhaarNumber = ($aadhaar !== '');
+    $hasAadhaarWord   = $aadhaarKeyword;
+    $hasGovIndicator  = $govKeyword;
+    $hasName          = ($detectedName !== '');
+
+
     /*
-=========================================================
-FINAL DECISION
-LOW FALSE-REJECTION PROJECT MODE
-=========================================================
-*/
+    =========================================================
+    REJECTION / APPROVAL LOGIC
+    =========================================================
+    */
 
-$hasAadhaarNumber = ($aadhaar !== '');
-$hasAadhaarWord   = $aadhaarKeyword;
-$hasGovIndicator  = $govKeyword;
-$hasName          = ($detectedName !== '');
+    if (count($suspiciousFound) > 0) {
 
+        /*
+        Explicit suspicious indicators:
+        DUPLICATE / SAMPLE / FAKE / DEMO / INVALID etc.
+        */
+        $status = 'REJECTED';
 
-/*
-=========================================================
-1. EXPLICIT SUSPICIOUS INDICATOR
-=========================================================
-*/
+    } elseif ($hasAadhaarNumber) {
 
-if (count($suspiciousFound) > 0) {
+        /*
+        12-digit Aadhaar pattern detected.
+        */
+        $status = 'APPROVED';
 
-    // Suspicious OCR result ko direct reject na karke
-    // manual review me bhej rahe hain.
-    $status = 'MANUAL REVIEW';
+    } elseif (
+        $hasAadhaarWord &&
+        $hasGovIndicator
+    ) {
 
-}
+        /*
+        Aadhaar + Government/India indicator.
+        */
+        $status = 'APPROVED';
 
+    } elseif (
+        $hasAadhaarWord &&
+        $score >= 25
+    ) {
 
-/*
-=========================================================
-2. AADHAAR NUMBER DETECTED
-=========================================================
-*/
+        /*
+        Aadhaar keyword + sufficient document information.
+        */
+        $status = 'APPROVED';
 
-elseif ($hasAadhaarNumber) {
+    } elseif (
+        $hasName &&
+        $hasGovIndicator &&
+        $score >= 20
+    ) {
 
-    // OCR ne 12-digit Aadhaar pattern detect kiya.
-    // DOB/name/gender miss hone par reject nahi hoga.
-    $status = 'APPROVED';
+        /*
+        Name + Government indicator + basic evidence.
+        */
+        $status = 'APPROVED';
 
-}
+    } else {
 
+        /*
+        Insufficient evidence.
+        */
+        $status = 'REJECTED';
+    }
 
-/*
-=========================================================
-3. AADHAAR + GOVERNMENT INDICATOR
-=========================================================
-*/
-
-elseif (
-    $hasAadhaarWord &&
-    $hasGovIndicator
-) {
-
-    $status = 'APPROVED';
-
-}
-
-
-/*
-=========================================================
-4. AADHAAR WORD + SOME DOCUMENT INFORMATION
-=========================================================
-*/
-
-elseif (
-    $hasAadhaarWord &&
-    $score >= 25
-) {
-
-    $status = 'APPROVED';
-
-}
-
-
-/*
-=========================================================
-5. PARTIAL DOCUMENT INFORMATION
-=========================================================
-*/
-
-elseif (
-    $hasName ||
-    $score >= 20
-) {
-
-    $status = 'MANUAL REVIEW';
-
-}
-
-
-/*
-=========================================================
-6. VERY WEAK OCR
-=========================================================
-*/
-
-else {
-
-    $status = 'REJECTED';
-
-}
 
     /*
     =========================================================
@@ -566,6 +525,7 @@ else {
 ?>
 
 <!DOCTYPE html>
+
 <html lang="en">
 
 <head>
@@ -846,6 +806,7 @@ async function startVerification() {
     const input =
         document.getElementById('file-input');
 
+
     if (
         !input.files ||
         input.files.length === 0
@@ -858,27 +819,33 @@ async function startVerification() {
         return;
     }
 
+
     const file = input.files[0];
+
 
     document.getElementById(
         'loading-box'
     ).style.display = 'block';
+
 
     const status =
         document.getElementById(
             'status-text'
         );
 
+
     try {
 
         status.textContent =
             'Loading AI OCR engine...';
+
 
         const result =
             await Tesseract.recognize(
                 file,
                 'eng',
                 {
+
                     logger: function(message) {
 
                         if (
@@ -891,12 +858,14 @@ async function startVerification() {
                                     message.progress * 100
                                 );
 
+
                             status.textContent =
                                 'OCR Analysis: ' +
                                 progress +
                                 '%';
                         }
                     }
+
                 }
             );
 
@@ -911,15 +880,16 @@ async function startVerification() {
 
 
         /*
-        -------------------------------------------
-        Possible name extraction
-        -------------------------------------------
+        =====================================================
+        POSSIBLE NAME EXTRACTION
+        =====================================================
         */
 
         let possibleName = '';
 
         const lines =
             text.split(/\r?\n/);
+
 
         for (
             let i = 0;
@@ -929,8 +899,9 @@ async function startVerification() {
 
             const current =
                 lines[i]
-                .trim()
-                .toUpperCase();
+                    .trim()
+                    .toUpperCase();
+
 
             if (
                 current.includes('GOVERNMENT') ||
@@ -941,6 +912,7 @@ async function startVerification() {
 
                     const candidate =
                         lines[i + 1].trim();
+
 
                     if (
                         candidate.length >= 3 &&
@@ -980,13 +952,16 @@ async function startVerification() {
 
         console.error(error);
 
+
         status.textContent =
             'OCR processing failed.';
+
 
         alert(
             'Could not analyze this image. Please use a clear JPG or PNG image.'
         );
     }
+
 }
 
 </script>
