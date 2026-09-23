@@ -1,5 +1,20 @@
 <?php
 
+/*
+=========================================================
+ENTERPRISE DIGIVERIFY
+AI DOCUMENT VERIFICATION RESULT
+ONLY APPROVED / REJECTED
+=========================================================
+*/
+
+
+/*
+=========================================================
+GET RESULT DATA
+=========================================================
+*/
+
 $status = isset($_GET['status'])
     ? strtoupper(trim($_GET['status']))
     : 'REJECTED';
@@ -17,48 +32,83 @@ $aadhaar = isset($_GET['aadhaar']) && trim($_GET['aadhaar']) !== ''
     : 'XXXX XXXX XXXX';
 
 $reasonString = isset($_GET['reason'])
-    ? $_GET['reason']
+    ? trim($_GET['reason'])
     : '';
 
 $warningString = isset($_GET['warning'])
-    ? $_GET['warning']
+    ? trim($_GET['warning'])
     : '';
 
-$reasons = $reasonString !== ''
-    ? explode('|', $reasonString)
-    : [];
-
-$warnings = $warningString !== ''
-    ? explode('|', $warningString)
-    : [];
 
 /*
-|--------------------------------------------------------------------------
-| STATUS HANDLING - ONLY APPROVED / REJECTED
-|--------------------------------------------------------------------------
+=========================================================
+REASONS / WARNINGS
+=========================================================
+*/
+
+$reasons = [];
+
+if ($reasonString !== '') {
+    $reasons = explode('|', $reasonString);
+}
+
+$warnings = [];
+
+if ($warningString !== '') {
+    $warnings = explode('|', $warningString);
+}
+
+
+/*
+=========================================================
+SCORE LIMIT
+=========================================================
+*/
+
+if ($score < 0) {
+    $score = 0;
+}
+
+if ($score > 100) {
+    $score = 100;
+}
+
+
+/*
+=========================================================
+STATUS HANDLING
+ONLY APPROVED OR REJECTED
+=========================================================
 */
 
 if ($status === 'APPROVED') {
 
+    $status = 'APPROVED';
+
     $title = 'APPROVED';
     $subtitle = 'AI SCREENING PASSED';
+
     $class = 'approved';
+
     $icon = '✓';
 
 } else {
 
     $status = 'REJECTED';
+
     $title = 'REJECTED';
     $subtitle = 'AI SCREENING FAILED';
+
     $class = 'rejected';
+
     $icon = '✕';
 }
 
 
 /*
-|--------------------------------------------------------------------------
-| SAFE OUTPUT FUNCTION
-|--------------------------------------------------------------------------
+=========================================================
+SAFE OUTPUT FUNCTION
+=========================================================
 */
 
 function e($value)
@@ -71,8 +121,8 @@ function e($value)
 }
 
 ?>
-
 <!DOCTYPE html>
+
 <html lang="en">
 
 <head>
@@ -83,18 +133,23 @@ function e($value)
       content="width=device-width, initial-scale=1.0">
 
 <title>
-    Enterprise DigiVerify - Verification Result
+    DigiVerify | Verification Result
 </title>
+
 
 <style>
 
+/* =====================================================
+   GLOBAL
+===================================================== */
+
 * {
+    margin: 0;
+    padding: 0;
     box-sizing: border-box;
 }
 
 body {
-
-    margin: 0;
 
     min-height: 100vh;
 
@@ -104,158 +159,229 @@ body {
         sans-serif;
 
     background:
-
         radial-gradient(
             circle at top left,
-            #123a68 0%,
+            rgba(0, 229, 255, 0.12),
             transparent 35%
         ),
-
         radial-gradient(
             circle at bottom right,
-            #062d48 0%,
+            rgba(0, 90, 180, 0.15),
             transparent 35%
         ),
-
-        #020b16;
+        #050b17;
 
     color: #ffffff;
 
-    display: flex;
-
-    justify-content: center;
-
-    align-items: center;
-
-    padding: 30px;
+    padding: 30px 15px;
 }
 
 
-/* MAIN CONTAINER */
+/* =====================================================
+   MAIN CONTAINER
+===================================================== */
 
 .container {
 
     width: 100%;
 
-    max-width: 850px;
+    max-width: 1050px;
+
+    margin: auto;
 }
 
 
-/* CARD */
+/* =====================================================
+   HEADER
+===================================================== */
 
-.card {
+.header {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    padding: 22px 28px;
+
+    margin-bottom: 25px;
 
     background:
-        rgba(5, 20, 35, 0.96);
+        linear-gradient(
+            145deg,
+            rgba(13, 30, 55, 0.98),
+            rgba(5, 15, 30, 0.98)
+        );
 
-    border:
-        1px solid
-        rgba(0, 212, 255, 0.35);
+    border: 2px solid #16496d;
+
+    border-radius: 18px;
+
+    box-shadow:
+        0 0 25px rgba(0, 229, 255, 0.10),
+        inset 0 0 25px rgba(0, 229, 255, 0.03);
+}
+
+
+.logo {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 14px;
+}
+
+
+.logo-icon {
+
+    width: 50px;
+
+    height: 50px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    border-radius: 12px;
+
+    font-size: 25px;
+
+    font-weight: 900;
+
+    color: #00131d;
+
+    background:
+        linear-gradient(
+            135deg,
+            #00e5ff,
+            #00a8ff
+        );
+
+    box-shadow:
+        0 0 20px rgba(0, 229, 255, 0.45);
+}
+
+
+.logo-text h1 {
+
+    font-size: 23px;
+
+    font-weight: 900;
+
+    letter-spacing: 0.5px;
+}
+
+
+.logo-text p {
+
+    margin-top: 4px;
+
+    font-size: 12px;
+
+    font-weight: 700;
+
+    color: #7edfff;
+
+    letter-spacing: 1px;
+}
+
+
+.enterprise-badge {
+
+    padding: 9px 15px;
+
+    border: 2px solid #00bcd4;
+
+    border-radius: 9px;
+
+    color: #7eeeff;
+
+    font-size: 11px;
+
+    font-weight: 900;
+
+    letter-spacing: 1px;
+
+    background: rgba(0, 188, 212, 0.08);
+}
+
+
+/* =====================================================
+   RESULT CARD
+===================================================== */
+
+.result-card {
+
+    position: relative;
+
+    overflow: hidden;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(10, 25, 47, 0.98),
+            rgba(4, 13, 27, 0.98)
+        );
+
+    border: 2px solid #174b70;
 
     border-radius: 22px;
 
     padding: 35px;
 
     box-shadow:
-
-        0 0 35px
-        rgba(0, 180, 255, 0.15),
-
-        inset 0 0 25px
-        rgba(0, 120, 180, 0.05);
+        0 20px 60px rgba(0, 0, 0, 0.55),
+        inset 0 0 35px rgba(0, 229, 255, 0.025);
 }
 
 
-/* LOGO */
+.result-card::before {
 
-.logo {
+    content: "";
+
+    position: absolute;
+
+    top: 0;
+
+    left: 0;
+
+    right: 0;
+
+    height: 4px;
+
+    background:
+        linear-gradient(
+            90deg,
+            #00e5ff,
+            #008cff,
+            #00e5ff
+        );
+}
+
+
+/* =====================================================
+   STATUS AREA
+===================================================== */
+
+.status-area {
 
     text-align: center;
 
-    font-size: 28px;
-
-    font-weight: bold;
-
-    color: #00d9ff;
-
-    margin-bottom: 25px;
+    padding: 15px 0 35px;
 }
 
 
-/* RESULT BOX */
+.status-icon {
 
-.result-box {
+    width: 105px;
 
-    text-align: center;
+    height: 105px;
 
-    padding: 30px 20px;
-
-    border-radius: 18px;
-
-    margin-bottom: 25px;
-}
-
-
-/* APPROVED */
-
-.result-box.approved {
-
-    border:
-        2px solid #00ff9d;
-
-    background:
-        rgba(0, 255, 157, 0.07);
-
-    box-shadow:
-        0 0 30px
-        rgba(0, 255, 157, 0.15);
-}
-
-
-/* REVIEW */
-
-.result-box.review {
-
-    border:
-        2px solid #ffc107;
-
-    background:
-        rgba(255, 193, 7, 0.07);
-
-    box-shadow:
-        0 0 30px
-        rgba(255, 193, 7, 0.12);
-}
-
-
-/* REJECTED */
-
-.result-box.rejected {
-
-    border:
-        2px solid #ff4757;
-
-    background:
-        rgba(255, 71, 87, 0.07);
-
-    box-shadow:
-        0 0 30px
-        rgba(255, 71, 87, 0.15);
-}
-
-
-/* ICON */
-
-.icon {
-
-    width: 85px;
-
-    height: 85px;
-
-    border-radius: 50%;
-
-    margin:
-        0 auto 18px;
+    margin: 0 auto 20px;
 
     display: flex;
 
@@ -263,392 +389,621 @@ body {
 
     justify-content: center;
 
-    font-size: 50px;
+    border-radius: 50%;
 
-    font-weight: bold;
+    font-size: 58px;
+
+    font-weight: 900;
 }
 
 
-/* APPROVED ICON */
+.status-title {
 
-.approved .icon {
+    font-size: 45px;
 
-    color: #00ff9d;
+    line-height: 1;
 
-    border:
-        3px solid #00ff9d;
-}
-
-
-/* REVIEW ICON */
-
-.review .icon {
-
-    color: #ffc107;
-
-    border:
-        3px solid #ffc107;
-}
-
-
-/* REJECTED ICON */
-
-.rejected .icon {
-
-    color: #ff4757;
-
-    border:
-        3px solid #ff4757;
-}
-
-
-/* RESULT TITLE */
-
-.result-title {
-
-    font-size: 38px;
-
-    font-weight: bold;
+    font-weight: 1000;
 
     letter-spacing: 2px;
+
+    margin-bottom: 10px;
 }
 
 
-/* TITLE COLORS */
+.status-subtitle {
 
-.approved .result-title {
+    font-size: 14px;
 
-    color: #00ff9d;
-}
+    font-weight: 900;
 
-.review .result-title {
+    letter-spacing: 2px;
 
-    color: #ffc107;
-}
-
-.rejected .result-title {
-
-    color: #ff4757;
 }
 
 
-/* SUBTITLE */
+/* =====================================================
+   APPROVED
+===================================================== */
 
-.subtitle {
+.approved .status-icon {
 
-    margin-top: 8px;
+    color: #00ffae;
 
-    color: #a8c7d8;
-
-    font-size: 15px;
-
-    letter-spacing: 1px;
-}
-
-
-/* SCORE */
-
-.score {
-
-    margin:
-        20px auto 0;
-
-    display: inline-block;
-
-    padding:
-        10px 22px;
-
-    border-radius: 30px;
+    border: 5px solid #00ffae;
 
     background:
-        rgba(0, 212, 255, 0.1);
+        rgba(0, 255, 174, 0.08);
 
-    border:
-        1px solid
-        rgba(0, 212, 255, 0.35);
-
-    color: #00d9ff;
-
-    font-size: 18px;
-
-    font-weight: bold;
+    box-shadow:
+        0 0 35px rgba(0, 255, 174, 0.30),
+        inset 0 0 20px rgba(0, 255, 174, 0.08);
 }
 
 
-/* SECTION TITLE */
+.approved .status-title {
 
-.section-title {
+    color: #00ffae;
 
-    color: #00d9ff;
-
-    font-size: 18px;
-
-    font-weight: bold;
-
-    margin:
-        25px 0 12px;
+    text-shadow:
+        0 0 20px rgba(0, 255, 174, 0.35);
 }
 
 
-/* DETAILS GRID */
+.approved .status-subtitle {
 
-.details {
-
-    display: grid;
-
-    grid-template-columns:
-        1fr 1fr;
-
-    gap: 15px;
+    color: #79ffd1;
 }
 
 
-/* DETAIL CARD */
+/* =====================================================
+   REJECTED
+===================================================== */
 
-.detail {
+.rejected .status-icon {
+
+    color: #ff4f67;
+
+    border: 5px solid #ff4f67;
 
     background:
-        rgba(255,255,255,0.035);
+        rgba(255, 79, 103, 0.08);
 
-    border:
-        1px solid
-        rgba(255,255,255,0.08);
-
-    padding: 18px;
-
-    border-radius: 12px;
+    box-shadow:
+        0 0 35px rgba(255, 79, 103, 0.28),
+        inset 0 0 20px rgba(255, 79, 103, 0.08);
 }
 
 
-/* LABEL */
+.rejected .status-title {
 
-.label {
+    color: #ff4f67;
 
-    color: #7896a8;
+    text-shadow:
+        0 0 20px rgba(255, 79, 103, 0.35);
+}
+
+
+.rejected .status-subtitle {
+
+    color: #ff9eaa;
+}
+
+
+/* =====================================================
+   SCORE
+===================================================== */
+
+.score-box {
+
+    margin: 0 auto 30px;
+
+    max-width: 500px;
+
+    padding: 22px;
+
+    text-align: center;
+
+    border: 2px solid #205879;
+
+    border-radius: 16px;
+
+    background:
+        rgba(0, 20, 40, 0.70);
+}
+
+
+.score-label {
+
+    color: #7ba7c4;
 
     font-size: 12px;
 
-    text-transform: uppercase;
+    font-weight: 900;
 
-    margin-bottom: 7px;
+    letter-spacing: 2px;
+
+    margin-bottom: 8px;
 }
 
 
-/* VALUE */
+.score-value {
 
-.value {
+    font-size: 42px;
 
-    color: #ffffff;
+    font-weight: 1000;
 
-    font-size: 16px;
+    color: #00e5ff;
 
-    font-weight: bold;
-
-    word-break: break-word;
+    text-shadow:
+        0 0 18px rgba(0, 229, 255, 0.35);
 }
 
 
-/* LIST */
+.score-bar {
 
-.list {
+    width: 100%;
+
+    height: 12px;
+
+    margin-top: 14px;
+
+    overflow: hidden;
+
+    border-radius: 20px;
+
+    background: #10263b;
+
+    border: 1px solid #24536e;
+}
+
+
+.score-fill {
+
+    height: 100%;
+
+    width: <?php echo $score; ?>%;
+
+    border-radius: 20px;
 
     background:
-        rgba(255,255,255,0.03);
+        linear-gradient(
+            90deg,
+            #00a8ff,
+            #00e5ff
+        );
 
-    border-radius: 12px;
-
-    padding:
-        15px 20px;
+    box-shadow:
+        0 0 15px rgba(0, 229, 255, 0.45);
 }
 
 
-/* LIST ITEM */
+/* =====================================================
+   SECTION
+===================================================== */
 
-.list div {
-
-    padding: 9px 0;
-
-    border-bottom:
-        1px solid
-        rgba(255,255,255,0.06);
-
-    color: #c7dce7;
-
-    line-height: 1.5;
-}
-
-.list div:last-child {
-
-    border-bottom: none;
-}
-
-
-/* POSITIVE */
-
-.good {
-
-    color: #00ff9d !important;
-}
-
-
-/* WARNING */
-
-.bad {
-
-    color: #ff6b78 !important;
-}
-
-
-/* REVIEW */
-
-.review-text {
-
-    color: #ffc107 !important;
-}
-
-
-/* NOTICE */
-
-.notice {
-
-    margin-top: 25px;
-
-    padding: 15px;
-
-    border-radius: 12px;
-
-    background:
-        rgba(255,193,7,0.07);
-
-    border:
-        1px solid
-        rgba(255,193,7,0.25);
-
-    color: #d9c98b;
-
-    font-size: 13px;
-
-    line-height: 1.6;
-}
-
-
-/* BUTTONS */
-
-.buttons {
-
-    display: flex;
-
-    gap: 15px;
+.section {
 
     margin-top: 28px;
 }
 
 
-/* BUTTON */
+.section-title {
 
-.btn {
+    display: flex;
 
-    flex: 1;
+    align-items: center;
 
-    text-decoration: none;
+    gap: 10px;
+
+    padding-left: 14px;
+
+    margin-bottom: 15px;
+
+    border-left: 5px solid #00e5ff;
+
+    color: #dffaff;
+
+    font-size: 17px;
+
+    font-weight: 1000;
+
+    letter-spacing: 0.4px;
+}
+
+
+/* =====================================================
+   DETAILS GRID
+===================================================== */
+
+.details-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 15px;
+}
+
+
+.detail-card {
+
+    padding: 19px;
+
+    min-height: 90px;
+
+    background:
+        rgba(6, 21, 39, 0.92);
+
+    border: 2px solid #173f5b;
+
+    border-radius: 13px;
+
+    transition: 0.2s ease;
+}
+
+
+.detail-card:hover {
+
+    border-color: #00a9d1;
+
+    box-shadow:
+        0 0 18px rgba(0, 229, 255, 0.08);
+}
+
+
+.detail-label {
+
+    margin-bottom: 8px;
+
+    color: #7094ad;
+
+    font-size: 11px;
+
+    font-weight: 900;
+
+    text-transform: uppercase;
+
+    letter-spacing: 1px;
+}
+
+
+.detail-value {
+
+    color: #ffffff;
+
+    font-size: 16px;
+
+    font-weight: 900;
+
+    word-break: break-word;
+}
+
+
+/* =====================================================
+   ANALYSIS LIST
+===================================================== */
+
+.analysis-list {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 10px;
+}
+
+
+.analysis-item {
+
+    display: flex;
+
+    align-items: flex-start;
+
+    gap: 12px;
+
+    padding: 15px 17px;
+
+    border: 2px solid #183e58;
+
+    border-radius: 12px;
+
+    background:
+        rgba(5, 19, 35, 0.90);
+
+    color: #d9edf5;
+
+    font-size: 14px;
+
+    font-weight: 700;
+
+    line-height: 1.5;
+}
+
+
+.analysis-icon {
+
+    flex-shrink: 0;
+
+    width: 24px;
+
+    height: 24px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    border-radius: 50%;
+
+    font-size: 13px;
+
+    font-weight: 1000;
+}
+
+
+.reason .analysis-icon {
+
+    color: #00e5ff;
+
+    border: 2px solid #00e5ff;
+
+    background:
+        rgba(0, 229, 255, 0.08);
+}
+
+
+.warning .analysis-icon {
+
+    color: #ffc857;
+
+    border: 2px solid #ffc857;
+
+    background:
+        rgba(255, 200, 87, 0.08);
+}
+
+
+/* =====================================================
+   EMPTY MESSAGE
+===================================================== */
+
+.empty-message {
+
+    padding: 18px;
+
+    border: 2px dashed #31536a;
+
+    border-radius: 12px;
+
+    color: #7695a8;
 
     text-align: center;
 
-    padding: 14px;
+    font-size: 13px;
 
-    border-radius: 10px;
-
-    font-weight: bold;
-
-    transition: 0.2s;
+    font-weight: 700;
 }
 
 
-/* PRIMARY */
+/* =====================================================
+   NOTICE
+===================================================== */
 
-.btn-primary {
+.notice {
+
+    margin-top: 30px;
+
+    padding: 20px;
+
+    border: 2px solid #755f24;
+
+    border-radius: 14px;
 
     background:
-        #00c8ff;
-
-    color:
-        #00121c;
+        rgba(117, 95, 36, 0.10);
 }
 
 
-/* SECONDARY */
+.notice-title {
 
-.btn-secondary {
+    margin-bottom: 8px;
 
-    background:
-        rgba(255,255,255,0.06);
+    color: #ffd66b;
 
-    color:
-        #ffffff;
+    font-size: 14px;
 
-    border:
-        1px solid
-        rgba(255,255,255,0.15);
+    font-weight: 1000;
 }
 
 
-/* HOVER */
+.notice p {
 
-.btn:hover {
-
-    transform:
-        translateY(-2px);
-
-    opacity: 0.92;
-}
-
-
-/* FOOTER */
-
-.footer {
-
-    text-align: center;
-
-    color: #5d7888;
+    color: #d8cfae;
 
     font-size: 12px;
 
-    margin-top: 25px;
+    font-weight: 600;
+
+    line-height: 1.7;
 }
 
 
-/* MOBILE */
+/* =====================================================
+   BUTTONS
+===================================================== */
 
-@media(max-width:650px) {
+.buttons {
+
+    display: flex;
+
+    justify-content: center;
+
+    gap: 15px;
+
+    margin-top: 32px;
+
+    flex-wrap: wrap;
+}
+
+
+.btn {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    min-width: 190px;
+
+    padding: 14px 22px;
+
+    text-decoration: none;
+
+    border-radius: 10px;
+
+    font-size: 14px;
+
+    font-weight: 1000;
+
+    letter-spacing: 0.3px;
+
+    border: 2px solid #00b8dc;
+
+    color: #00131d;
+
+    background:
+        linear-gradient(
+            135deg,
+            #00e5ff,
+            #00a8ff
+        );
+
+    box-shadow:
+        0 0 18px rgba(0, 229, 255, 0.18);
+
+    transition: 0.2s ease;
+}
+
+
+.btn:hover {
+
+    transform: translateY(-2px);
+
+    box-shadow:
+        0 0 28px rgba(0, 229, 255, 0.35);
+}
+
+
+.btn-secondary {
+
+    color: #b9eafa;
+
+    background:
+        rgba(0, 229, 255, 0.05);
+
+    border: 2px solid #285a73;
+
+    box-shadow: none;
+}
+
+
+.btn-secondary:hover {
+
+    color: #ffffff;
+
+    border-color: #00bcd4;
+
+    background:
+        rgba(0, 188, 212, 0.10);
+}
+
+
+/* =====================================================
+   FOOTER
+===================================================== */
+
+.footer {
+
+    margin-top: 22px;
+
+    text-align: center;
+
+    color: #527287;
+
+    font-size: 11px;
+
+    font-weight: 700;
+
+    line-height: 1.7;
+}
+
+
+/* =====================================================
+   RESPONSIVE
+===================================================== */
+
+@media (max-width: 700px) {
 
     body {
-
-        padding: 15px;
+        padding: 15px 10px;
     }
 
-    .card {
+    .header {
 
-        padding: 20px;
+        padding: 17px;
+
+        flex-direction: column;
+
+        gap: 15px;
+
+        text-align: center;
     }
 
-    .details {
+    .logo {
+        justify-content: center;
+    }
 
-        grid-template-columns:
-            1fr;
+    .result-card {
+
+        padding: 22px 16px;
+
+        border-radius: 17px;
+    }
+
+    .status-icon {
+
+        width: 85px;
+
+        height: 85px;
+
+        font-size: 45px;
+    }
+
+    .status-title {
+
+        font-size: 34px;
+    }
+
+    .details-grid {
+
+        grid-template-columns: 1fr;
     }
 
     .buttons {
 
-        flex-direction:
-            column;
+        flex-direction: column;
     }
 
-    .result-title {
+    .btn {
 
-        font-size: 30px;
+        width: 100%;
     }
-
 }
+
 
 </style>
 
@@ -657,292 +1012,373 @@ body {
 
 <body>
 
+
 <div class="container">
 
-<div class="card">
 
+    <!-- =================================================
+         HEADER
+    ================================================== -->
 
-<!-- LOGO -->
+    <header class="header">
 
-<div class="logo">
+        <div class="logo">
 
-    🛡 Enterprise DigiVerify
+            <div class="logo-icon">
+                DV
+            </div>
 
-</div>
+            <div class="logo-text">
 
+                <h1>
+                    Enterprise DigiVerify
+                </h1>
 
-<!-- RESULT -->
+                <p>
+                    DIGITAL DOCUMENT VERIFICATION PLATFORM
+                </p>
 
-<div class="result-box <?= e($class) ?>">
-
-
-    <div class="icon">
-
-        <?= e($icon) ?>
-
-    </div>
-
-
-    <div class="result-title">
-
-        <?= e($title) ?>
-
-    </div>
-
-
-    <div class="subtitle">
-
-        <?= e($subtitle) ?>
-
-    </div>
-
-
-    <div class="score">
-
-        AI SCREENING SCORE:
-        <?= e($score) ?>/100
-
-    </div>
-
-
-</div>
-
-
-<!-- DOCUMENT DETAILS -->
-
-<div class="section-title">
-
-    📄 Document Details
-
-</div>
-
-
-<div class="details">
-
-
-    <div class="detail">
-
-        <div class="label">
-
-            Document Holder
+            </div>
 
         </div>
 
-        <div class="value">
 
-            <?= e($name) ?>
+        <div class="enterprise-badge">
+            AI SCREENING SYSTEM
+        </div>
+
+    </header>
+
+
+
+    <!-- =================================================
+         RESULT CARD
+    ================================================== -->
+
+    <main class="result-card <?php echo e($class); ?>">
+
+
+        <!-- STATUS -->
+
+        <div class="status-area">
+
+            <div class="status-icon">
+                <?php echo e($icon); ?>
+            </div>
+
+
+            <div class="status-title">
+                <?php echo e($title); ?>
+            </div>
+
+
+            <div class="status-subtitle">
+                <?php echo e($subtitle); ?>
+            </div>
 
         </div>
 
-    </div>
 
 
-    <div class="detail">
+        <!-- =================================================
+             SCORE
+        ================================================== -->
 
-        <div class="label">
+        <div class="score-box">
 
-            Aadhaar Number
+            <div class="score-label">
+                AI SCREENING SCORE
+            </div>
 
-        </div>
+            <div class="score-value">
+                <?php echo e($score); ?>/100
+            </div>
 
-        <div class="value">
+            <div class="score-bar">
 
-            <?= e($aadhaar) ?>
+                <div class="score-fill"></div>
 
-        </div>
-
-    </div>
-
-
-    <div class="detail">
-
-        <div class="label">
-
-            OCR Engine
+            </div>
 
         </div>
 
-        <div class="value">
 
-            Tesseract.js
+
+        <!-- =================================================
+             DOCUMENT INFORMATION
+        ================================================== -->
+
+        <section class="section">
+
+            <div class="section-title">
+                📄 Document Information
+            </div>
+
+
+            <div class="details-grid">
+
+
+                <div class="detail-card">
+
+                    <div class="detail-label">
+                        Document Holder
+                    </div>
+
+                    <div class="detail-value">
+                        <?php echo e($name); ?>
+                    </div>
+
+                </div>
+
+
+                <div class="detail-card">
+
+                    <div class="detail-label">
+                        Aadhaar Number
+                    </div>
+
+                    <div class="detail-value">
+                        <?php echo e($aadhaar); ?>
+                    </div>
+
+                </div>
+
+
+                <div class="detail-card">
+
+                    <div class="detail-label">
+                        OCR Engine
+                    </div>
+
+                    <div class="detail-value">
+                        Tesseract.js
+                    </div>
+
+                </div>
+
+
+                <div class="detail-card">
+
+                    <div class="detail-label">
+                        AI Screening Engine
+                    </div>
+
+                    <div class="detail-value">
+                        DigiVerify AI
+                    </div>
+
+                </div>
+
+
+                <div class="detail-card">
+
+                    <div class="detail-label">
+                        Verification Mode
+                    </div>
+
+                    <div class="detail-value">
+                        Document Screening
+                    </div>
+
+                </div>
+
+
+                <div class="detail-card">
+
+                    <div class="detail-label">
+                        Final Status
+                    </div>
+
+                    <div class="detail-value">
+                        <?php echo e($status); ?>
+                    </div>
+
+                </div>
+
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =================================================
+             ANALYSIS REASONS
+        ================================================== -->
+
+        <section class="section">
+
+            <div class="section-title">
+                🔍 Analysis Details
+            </div>
+
+
+            <?php if (count($reasons) > 0): ?>
+
+                <div class="analysis-list">
+
+                    <?php foreach ($reasons as $reason): ?>
+
+                        <?php
+
+                        $reason = trim($reason);
+
+                        if ($reason === '') {
+                            continue;
+                        }
+
+                        ?>
+
+                        <div class="analysis-item reason">
+
+                            <div class="analysis-icon">
+                                ✓
+                            </div>
+
+                            <div>
+                                <?php echo e($reason); ?>
+                            </div>
+
+                        </div>
+
+                    <?php endforeach; ?>
+
+                </div>
+
+            <?php else: ?>
+
+                <div class="empty-message">
+                    No additional analysis details available.
+                </div>
+
+            <?php endif; ?>
+
+        </section>
+
+
+
+        <!-- =================================================
+             WARNINGS
+        ================================================== -->
+
+        <?php if (count($warnings) > 0): ?>
+
+        <section class="section">
+
+            <div class="section-title">
+                ⚠ Screening Warnings
+            </div>
+
+
+            <div class="analysis-list">
+
+                <?php foreach ($warnings as $warning): ?>
+
+                    <?php
+
+                    $warning = trim($warning);
+
+                    if ($warning === '') {
+                        continue;
+                    }
+
+                    ?>
+
+                    <div class="analysis-item warning">
+
+                        <div class="analysis-icon">
+                            !
+                        </div>
+
+                        <div>
+                            <?php echo e($warning); ?>
+                        </div>
+
+                    </div>
+
+                <?php endforeach; ?>
+
+            </div>
+
+        </section>
+
+        <?php endif; ?>
+
+
+
+        <!-- =================================================
+             IMPORTANT NOTICE
+        ================================================== -->
+
+        <div class="notice">
+
+            <div class="notice-title">
+                ⚠ Important Verification Notice
+            </div>
+
+            <p>
+                Enterprise DigiVerify performs project-level
+                document screening using OCR and rule-based
+                analysis. This result does not represent official
+                UIDAI authentication or government validation.
+                Final acceptance of an identity document should
+                be performed using the appropriate official
+                verification process.
+            </p>
 
         </div>
 
-    </div>
 
 
-    <div class="detail">
+        <!-- =================================================
+             BUTTONS
+        ================================================== -->
 
-        <div class="label">
+        <div class="buttons">
 
-            AI Screening Engine
+            <a
+                href="upload.php"
+                class="btn"
+            >
+                🔄 Verify Another Document
+            </a>
+
+
+            <a
+                href="../index.php"
+                class="btn btn-secondary"
+            >
+                🏠 Back to Dashboard
+            </a>
 
         </div>
 
-        <div class="value">
 
-            DigiVerify AI
+    </main>
 
-        </div>
 
-    </div>
+
+    <!-- =================================================
+         FOOTER
+    ================================================== -->
+
+    <footer class="footer">
+
+        Enterprise DigiVerify
+        &nbsp;•&nbsp;
+        AI Document Screening Platform
+        &nbsp;•&nbsp;
+        B.Sc. Computer Science Project
+
+        <br>
+
+        Project-level screening only — not official government authentication.
+
+    </footer>
 
 
 </div>
 
-
-<!-- ANALYSIS -->
-
-<div class="section-title">
-
-    ✓ Analysis Details
-
-</div>
-
-
-<div class="list">
-
-<?php
-
-if (count($reasons) > 0) {
-
-    foreach ($reasons as $reason) {
-
-        if (trim($reason) === '') {
-            continue;
-        }
-
-        echo
-            '<div class="good">✓ '
-            . e($reason)
-            . '</div>';
-    }
-
-} else {
-
-    echo
-        '<div>No positive checks detected.</div>';
-
-}
-
-?>
-
-</div>
-
-
-<!-- WARNINGS -->
-
-<?php if (count($warnings) > 0): ?>
-
-<div class="section-title">
-
-    ⚠ Warnings
-
-</div>
-
-
-<div class="list">
-
-<?php
-
-foreach ($warnings as $warning) {
-
-    if (trim($warning) === '') {
-        continue;
-    }
-
-    echo
-        '<div class="bad">⚠ '
-        . e($warning)
-        . '</div>';
-}
-
-?>
-
-</div>
-
-<?php endif; ?>
-
-
-<!-- REVIEW MESSAGE -->
-
-<?php if ($status === 'MANUAL REVIEW'): ?>
-
-<div class="section-title">
-
-    🔎 Review Status
-
-</div>
-
-
-<div class="list">
-
-    <div class="review-text">
-
-        ⚠ The document contains some recognizable
-        identity information, but additional review
-        is recommended before acceptance.
-
-    </div>
-
-</div>
-
-<?php endif; ?>
-
-
-<!-- IMPORTANT NOTICE -->
-
-<div class="notice">
-
-<strong>Important:</strong><br>
-
-This result represents a
-<strong>project-level AI document screening</strong>.
-
-It does not constitute official UIDAI authentication
-or a legal confirmation that an Aadhaar document is genuine.
-
-</div>
-
-
-<!-- BUTTONS -->
-
-<div class="buttons">
-
-
-<a
-    href="upload.php"
-    class="btn btn-primary"
->
-    🔍 Verify Another Document
-</a>
-
-
-<a
-    href="../index.php"
-    class="btn btn-secondary"
->
-    🏠 Home
-</a>
-
-
-</div>
-
-
-<!-- FOOTER -->
-
-<div class="footer">
-
-    Enterprise DigiVerify
-    •
-    Digital Document Screening Platform
-
-</div>
-
-
-</div>
-
-</div>
 
 </body>
 
