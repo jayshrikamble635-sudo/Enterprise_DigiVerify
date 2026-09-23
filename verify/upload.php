@@ -3,42 +3,97 @@
 error_reporting(E_ALL);
 ini_set('display_errors', '1');
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ocr_text'])) {
+
+/*
+=========================================================
+ENTERPRISE DIGIVERIFY
+AI DOCUMENT SCREENING
+ONLY APPROVED / REJECTED
+=========================================================
+*/
+
+
+/*
+=========================================================
+POST OCR DATA
+=========================================================
+*/
+
+if (
+    $_SERVER['REQUEST_METHOD'] === 'POST' &&
+    isset($_POST['ocr_text'])
+) {
 
     $ocr = trim($_POST['ocr_text']);
-    $jsName = isset($_POST['js_name']) ? trim($_POST['js_name']) : '';
+
+    $jsName = isset($_POST['js_name'])
+        ? trim($_POST['js_name'])
+        : '';
+
 
     $score = 0;
+
     $reasons = [];
+
     $warnings = [];
 
 
     /*
-    =========================================================
+    =====================================================
     NORMALIZE OCR
-    =========================================================
+    =====================================================
     */
 
-    $text = preg_replace('/[ \t]+/', ' ', $ocr);
+    $text = preg_replace(
+        '/[ \t]+/',
+        ' ',
+        $ocr
+    );
+
+    $text = trim($text);
+
     $upper = strtoupper($text);
 
 
     /*
-    =========================================================
-    1. AADHAAR NUMBER
-    =========================================================
+    =====================================================
+    1. AADHAAR NUMBER DETECTION
+    =====================================================
     */
 
     $aadhaar = '';
 
     $numberPatterns = [
+
+        /*
+        1234 5678 9012
+        */
+
         '/\b([0-9]{4})[\s\-]+([0-9]{4})[\s\-]+([0-9]{4})\b/',
+
+        /*
+        1234-5678-9012
+        */
+
+        '/\b([0-9]{4})[\-]+([0-9]{4})[\-]+([0-9]{4})\b/',
+
+        /*
+        123456789012
+        */
+
         '/\b([0-9]{4})([0-9]{4})([0-9]{4})\b/'
     ];
 
+
     foreach ($numberPatterns as $pattern) {
 
-        if (preg_match($pattern, $text, $m)) {
+        if (
+            preg_match(
+                $pattern,
+                $text,
+                $m
+            )
+        ) {
 
             $aadhaar =
                 $m[1] . ' ' .
@@ -49,9 +104,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ocr_text'])) {
         }
     }
 
+
     if ($aadhaar !== '') {
 
-        $score += 30;
+        $score += 35;
 
         $reasons[] =
             '12-digit Aadhaar number pattern detected.';
@@ -64,30 +120,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ocr_text'])) {
 
 
     /*
-    =========================================================
+    =====================================================
     2. AADHAAR KEYWORD
-    =========================================================
+    =====================================================
     */
 
     $aadhaarKeyword = false;
 
+
     $aadhaarWords = [
+
         'AADHAAR',
         'AADHAR',
         'आधार'
+
     ];
+
 
     foreach ($aadhaarWords as $word) {
 
         if (
-            stripos($upper, strtoupper($word)) !== false ||
-            strpos($text, $word) !== false
+            stripos(
+                $upper,
+                strtoupper($word)
+            ) !== false
+            ||
+            strpos(
+                $text,
+                $word
+            ) !== false
         ) {
 
             $aadhaarKeyword = true;
+
             break;
         }
     }
+
 
     if ($aadhaarKeyword) {
 
@@ -104,14 +173,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ocr_text'])) {
 
 
     /*
-    =========================================================
-    3. GOVERNMENT / INDIA
-    =========================================================
+    =====================================================
+    3. GOVERNMENT / INDIA INDICATOR
+    =====================================================
     */
 
     $govKeyword = false;
 
+
     $governmentPatterns = [
+
         'GOVERNMENT OF INDIA',
         'GOVT OF INDIA',
         'GOVERNMENT',
@@ -119,23 +190,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ocr_text'])) {
         'INDIA',
         'भारत सरकार',
         'भारत'
+
     ];
+
 
     foreach ($governmentPatterns as $word) {
 
         if (
-            stripos($upper, strtoupper($word)) !== false ||
-            strpos($text, $word) !== false
+            stripos(
+                $upper,
+                strtoupper($word)
+            ) !== false
+            ||
+            strpos(
+                $text,
+                $word
+            ) !== false
         ) {
 
             $govKeyword = true;
+
             break;
         }
     }
 
+
     if ($govKeyword) {
 
-        $score += 15;
+        $score += 10;
 
         $reasons[] =
             'Government/India indicator detected.';
@@ -148,28 +230,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ocr_text'])) {
 
 
     /*
-    =========================================================
+    =====================================================
     4. DOB CHECK
-    =========================================================
+    =====================================================
     */
 
     $dobFound = false;
 
+
     $dobPatterns = [
+
+        /*
+        DD/MM/YYYY
+        DD-MM-YYYY
+        */
+
         '/\b[0-3]?[0-9][\/\-][0-1]?[0-9][\/\-][12][0-9]{3}\b/',
+
+        /*
+        YYYY/MM/DD
+        YYYY-MM-DD
+        */
+
         '/\b[12][0-9]{3}[\/\-][0-1]?[0-9][\/\-][0-3]?[0-9]\b/',
+
+        /*
+        DOB
+        */
+
         '/\bDOB\b/i',
+
+        /*
+        DATE OF BIRTH
+        */
+
         '/\bDATE OF BIRTH\b/i'
+
     ];
+
 
     foreach ($dobPatterns as $pattern) {
 
-        if (preg_match($pattern, $text)) {
+        if (
+            preg_match(
+                $pattern,
+                $text
+            )
+        ) {
 
             $dobFound = true;
+
             break;
         }
     }
+
 
     if ($dobFound) {
 
@@ -186,32 +300,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ocr_text'])) {
 
 
     /*
-    =========================================================
+    =====================================================
     5. GENDER CHECK
-    =========================================================
+    =====================================================
     */
 
     $genderFound = false;
 
+
     $genderWords = [
+
         'MALE',
         'FEMALE',
         'TRANSGENDER',
         'पुरुष',
         'महिला'
+
     ];
+
 
     foreach ($genderWords as $word) {
 
         if (
-            stripos($upper, strtoupper($word)) !== false ||
-            strpos($text, $word) !== false
+            stripos(
+                $upper,
+                strtoupper($word)
+            ) !== false
+            ||
+            strpos(
+                $text,
+                $word
+            ) !== false
         ) {
 
             $genderFound = true;
+
             break;
         }
     }
+
 
     if ($genderFound) {
 
@@ -223,14 +350,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ocr_text'])) {
 
 
     /*
-    =========================================================
+    =====================================================
     6. PIN CODE
-    =========================================================
+    =====================================================
     */
 
     $pinFound = false;
 
-    if (preg_match('/\b[1-9][0-9]{5}\b/', $text)) {
+
+    if (
+        preg_match(
+            '/\b[1-9][0-9]{5}\b/',
+            $text
+        )
+    ) {
 
         $pinFound = true;
 
@@ -242,27 +375,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ocr_text'])) {
 
 
     /*
-    =========================================================
+    =====================================================
     7. NAME DETECTION
-    =========================================================
+    =====================================================
     */
 
     $detectedName = '';
+
 
     $lines = preg_split(
         '/\r\n|\r|\n/',
         $ocr
     );
 
+
     foreach ($lines as $line) {
 
         $line = trim($line);
+
 
         if ($line === '') {
             continue;
         }
 
+
         $u = strtoupper($line);
+
+
+        /*
+        Skip obvious headings
+        */
 
         if (
             strpos($u, 'GOVERNMENT') !== false ||
@@ -270,30 +412,116 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ocr_text'])) {
             strpos($u, 'INDIA') !== false ||
             strpos($u, 'AADHAAR') !== false ||
             strpos($u, 'AADHAR') !== false ||
+            strpos($u, 'DATE OF BIRTH') !== false ||
+            strpos($u, 'DOB') !== false ||
+            strpos($u, 'YEAR OF BIRTH') !== false ||
+            strpos($u, 'MALE') !== false ||
+            strpos($u, 'FEMALE') !== false ||
             strpos($line, 'भारत') !== false ||
             strpos($line, 'आधार') !== false
         ) {
+
             continue;
         }
 
-        if (preg_match('/[0-9]/', $line)) {
-            continue;
-        }
+
+        /*
+        Skip lines containing numbers
+        */
 
         if (
-            strlen($line) >= 3 &&
-            strlen($line) <= 60
+            preg_match(
+                '/[0-9]/',
+                $line
+            )
         ) {
 
-            $detectedName = $line;
-            break;
+            continue;
+        }
+
+
+        /*
+        Remove OCR garbage symbols
+        */
+
+        $cleanName = preg_replace(
+            '/[^A-Za-zÀ-ÿ .\'\-]/',
+            '',
+            $line
+        );
+
+
+        $cleanName = trim(
+            preg_replace(
+                '/\s+/',
+                ' ',
+                $cleanName
+            )
+        );
+
+
+        /*
+        Basic name quality check
+        */
+
+        if (
+            strlen($cleanName) >= 3 &&
+            strlen($cleanName) <= 60
+        ) {
+
+            /*
+            Require at least 2 alphabetic characters
+            */
+
+            if (
+                preg_match(
+                    '/[A-Za-z]{2,}/',
+                    $cleanName
+                )
+            ) {
+
+                $detectedName = $cleanName;
+
+                break;
+            }
         }
     }
 
-    if ($detectedName === '' && $jsName !== '') {
 
-        $detectedName = $jsName;
+    /*
+    JS detected name fallback
+    */
+
+    if (
+        $detectedName === '' &&
+        $jsName !== ''
+    ) {
+
+        $cleanJsName = preg_replace(
+            '/[^A-Za-zÀ-ÿ .\'\-]/',
+            '',
+            $jsName
+        );
+
+
+        $cleanJsName = trim(
+            preg_replace(
+                '/\s+/',
+                ' ',
+                $cleanJsName
+            )
+        );
+
+
+        if (
+            strlen($cleanJsName) >= 3 &&
+            strlen($cleanJsName) <= 60
+        ) {
+
+            $detectedName = $cleanJsName;
+        }
     }
+
 
     if ($detectedName !== '') {
 
@@ -310,12 +538,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ocr_text'])) {
 
 
     /*
-    =========================================================
+    =====================================================
     8. OCR QUALITY
-    =========================================================
+    =====================================================
     */
 
-    $length = strlen(trim($ocr));
+    $length = strlen(
+        trim($ocr)
+    );
+
 
     if ($length >= 150) {
 
@@ -346,12 +577,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ocr_text'])) {
 
 
     /*
-    =========================================================
-    9. SUSPICIOUS WORDS
-    =========================================================
+    =====================================================
+    9. SUSPICIOUS DOCUMENT WORDS
+    =====================================================
     */
 
     $suspiciousWords = [
+
         'DUPLICATE',
         'SAMPLE',
         'SPECIMEN',
@@ -361,168 +593,243 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ocr_text'])) {
         'INVALID',
         'FOR DEMO',
         'SAMPLE COPY'
+
     ];
+
 
     $suspiciousFound = [];
 
-    foreach ($suspiciousWords as $word) {
 
-        if (stripos($upper, $word) !== false) {
+    foreach (
+        $suspiciousWords as $word
+    ) {
 
-            $suspiciousFound[] = $word;
+        if (
+            stripos(
+                $upper,
+                $word
+            ) !== false
+        ) {
+
+            $suspiciousFound[] =
+                $word;
         }
     }
 
 
     /*
-    =========================================================
+    =====================================================
     10. SUSPICIOUS PENALTY
-    =========================================================
+    =====================================================
     */
 
-    if (count($suspiciousFound) > 0) {
+    if (
+        count($suspiciousFound) > 0
+    ) {
 
         $score -= 55;
 
         $reasons[] =
             'Suspicious document indicator detected: ' .
-            implode(', ', $suspiciousFound);
+            implode(
+                ', ',
+                $suspiciousFound
+            );
     }
 
 
     /*
-    =========================================================
+    =====================================================
     SCORE LIMIT
-    =========================================================
+    =====================================================
     */
 
     if ($score < 0) {
+
         $score = 0;
     }
 
+
     if ($score > 100) {
+
         $score = 100;
     }
 
 
     /*
-    =========================================================
+    =====================================================
     FINAL DECISION
-    ONLY APPROVED OR REJECTED
-    =========================================================
+    STRICT APPROVAL
+    ONLY APPROVED / REJECTED
+    =====================================================
     */
 
-    $hasAadhaarNumber = ($aadhaar !== '');
-    $hasAadhaarWord   = $aadhaarKeyword;
-    $hasGovIndicator  = $govKeyword;
-    $hasName          = ($detectedName !== '');
+    $hasAadhaarNumber =
+        ($aadhaar !== '');
+
+
+    $hasAadhaarWord =
+        ($aadhaarKeyword === true);
+
+
+    $hasGovIndicator =
+        ($govKeyword === true);
 
 
     /*
-    =========================================================
-    REJECTION / APPROVAL LOGIC
-    =========================================================
+    =====================================================
+    RULE 1
+    SUSPICIOUS = REJECTED
+    =====================================================
     */
 
-    if (count($suspiciousFound) > 0) {
-
-        /*
-        Explicit suspicious indicators:
-        DUPLICATE / SAMPLE / FAKE / DEMO / INVALID etc.
-        */
-        $status = 'REJECTED';
-
-    } elseif ($hasAadhaarNumber) {
-
-        /*
-        12-digit Aadhaar pattern detected.
-        */
-        $status = 'APPROVED';
-
-    } elseif (
-        $hasAadhaarWord &&
-        $hasGovIndicator
+    if (
+        count($suspiciousFound) > 0
     ) {
 
-        /*
-        Aadhaar + Government/India indicator.
-        */
-        $status = 'APPROVED';
-
-    } elseif (
-        $hasAadhaarWord &&
-        $score >= 25
-    ) {
-
-        /*
-        Aadhaar keyword + sufficient document information.
-        */
-        $status = 'APPROVED';
-
-    } elseif (
-        $hasName &&
-        $hasGovIndicator &&
-        $score >= 20
-    ) {
-
-        /*
-        Name + Government indicator + basic evidence.
-        */
-        $status = 'APPROVED';
-
-    } else {
-
-        /*
-        Insufficient evidence.
-        */
         $status = 'REJECTED';
     }
 
 
     /*
-    =========================================================
-    MASK AADHAAR
-    =========================================================
+    =====================================================
+    RULE 2
+    STRONG APPROVAL
+    Aadhaar Number
+    +
+    Aadhaar Keyword
+    +
+    Government Indicator
+    +
+    Score >= 45
+    =====================================================
     */
 
-    $maskedAadhaar = 'XXXX XXXX XXXX';
+    elseif (
+
+        $hasAadhaarNumber &&
+        $hasAadhaarWord &&
+        $hasGovIndicator &&
+        $score >= 45
+
+    ) {
+
+        $status = 'APPROVED';
+    }
+
+
+    /*
+    =====================================================
+    RULE 3
+    SECOND APPROVAL
+    Aadhaar Number
+    +
+    Aadhaar Keyword
+    +
+    Score >= 55
+    =====================================================
+    */
+
+    elseif (
+
+        $hasAadhaarNumber &&
+        $hasAadhaarWord &&
+        $score >= 55
+
+    ) {
+
+        $status = 'APPROVED';
+    }
+
+
+    /*
+    =====================================================
+    EVERYTHING ELSE = REJECTED
+    =====================================================
+    */
+
+    else {
+
+        $status = 'REJECTED';
+    }
+
+
+    /*
+    =====================================================
+    MASK AADHAAR
+    =====================================================
+    */
+
+    $maskedAadhaar =
+        'XXXX XXXX XXXX';
+
 
     if ($aadhaar !== '') {
 
-        $parts = explode(' ', $aadhaar);
+        $parts =
+            preg_split(
+                '/\s+/',
+                $aadhaar
+            );
 
-        if (count($parts) === 3) {
+
+        if (
+            count($parts) === 3
+        ) {
 
             $maskedAadhaar =
-                'XXXX XXXX ' . $parts[2];
+                'XXXX XXXX ' .
+                $parts[2];
         }
     }
 
 
     /*
-    =========================================================
+    =====================================================
     SEND RESULT
-    =========================================================
+    =====================================================
     */
 
     $params = [
-        'status'  => $status,
-        'score'   => $score,
-        'name'    => $detectedName,
-        'aadhaar' => $maskedAadhaar,
-        'reason'  => implode('|', $reasons),
-        'warning' => implode('|', $warnings)
+
+        'status' =>
+            $status,
+
+        'score' =>
+            $score,
+
+        'name' =>
+            $detectedName,
+
+        'aadhaar' =>
+            $maskedAadhaar,
+
+        'reason' =>
+            implode(
+                '|',
+                $reasons
+            ),
+
+        'warning' =>
+            implode(
+                '|',
+                $warnings
+            )
+
     ];
+
 
     header(
         'Location: verification_result.php?' .
         http_build_query($params)
     );
 
+
     exit;
 }
 
 ?>
+
 
 <!DOCTYPE html>
 
@@ -538,16 +845,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ocr_text'])) {
 >
 
 <title>
-Enterprise DigiVerify - Aadhaar Verification
+Enterprise DigiVerify - Document Verification
 </title>
+
 
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
+
 <style>
+
+/* =====================================================
+   GLOBAL
+===================================================== */
 
 * {
     box-sizing: border-box;
 }
+
 
 body {
 
@@ -555,7 +869,12 @@ body {
 
     min-height: 100vh;
 
-    font-family: Arial, sans-serif;
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
+    color: #ffffff;
 
     background:
         radial-gradient(
@@ -570,8 +889,6 @@ body {
         ),
         #050b16;
 
-    color: white;
-
     display: flex;
 
     justify-content: center;
@@ -581,24 +898,39 @@ body {
     padding: 25px;
 }
 
+
+/* =====================================================
+   MAIN CONTAINER
+===================================================== */
+
 .container {
 
     width: 100%;
 
-    max-width: 720px;
+    max-width: 760px;
 
-    background: rgba(8,20,38,.97);
+    padding: 40px;
 
-    border: 1px solid #1d6f91;
+    background:
+        linear-gradient(
+            145deg,
+            rgba(8, 25, 45, .98),
+            rgba(4, 13, 27, .98)
+        );
+
+    border: 2px solid #195477;
 
     border-radius: 22px;
 
-    padding: 38px;
-
     box-shadow:
         0 0 50px
-        rgba(0,190,255,.16);
+        rgba(0, 190, 255, .16);
 }
+
+
+/* =====================================================
+   LOGO
+===================================================== */
 
 .logo {
 
@@ -608,26 +940,42 @@ body {
 
     font-size: 31px;
 
-    font-weight: bold;
+    font-weight: 1000;
+
+    letter-spacing: .5px;
 }
 
+
 .subtitle {
+
+    margin: 10px 0 30px;
 
     text-align: center;
 
     color: #9fb5c9;
 
-    margin: 10px 0 30px;
+    font-size: 14px;
+
+    font-weight: 700;
 }
 
+
+/* =====================================================
+   UPLOAD BOX
+===================================================== */
+
 .upload-box {
+
+    padding: 35px;
+
+    background:
+        rgba(5, 18, 34, .8);
 
     border: 2px dashed #2386a8;
 
     border-radius: 16px;
-
-    padding: 35px;
 }
+
 
 input[type=file] {
 
@@ -639,10 +987,37 @@ input[type=file] {
 
     color: white;
 
-    border: 1px solid #31556e;
+    border: 2px solid #31556e;
 
     border-radius: 10px;
+
+    cursor: pointer;
 }
+
+
+input[type=file]::file-selector-button {
+
+    margin-right: 12px;
+
+    padding: 9px 14px;
+
+    border: 0;
+
+    border-radius: 7px;
+
+    background: #00b8e6;
+
+    color: #00131c;
+
+    font-weight: 800;
+
+    cursor: pointer;
+}
+
+
+/* =====================================================
+   BUTTON
+===================================================== */
 
 button {
 
@@ -650,9 +1025,9 @@ button {
 
     margin-top: 20px;
 
-    padding: 16px;
+    padding: 17px;
 
-    border: 0;
+    border: 2px solid #00b8dc;
 
     border-radius: 10px;
 
@@ -667,17 +1042,31 @@ button {
 
     font-size: 17px;
 
-    font-weight: bold;
+    font-weight: 1000;
 
     cursor: pointer;
+
+    box-shadow:
+        0 0 20px
+        rgba(0, 212, 255, .18);
+
+    transition: .2s ease;
 }
+
 
 button:hover {
 
-    transform: translateY(-1px);
+    transform: translateY(-2px);
 
-    opacity: .92;
+    box-shadow:
+        0 0 28px
+        rgba(0, 212, 255, .30);
 }
+
+
+/* =====================================================
+   LOADING
+===================================================== */
 
 #loading-box {
 
@@ -685,58 +1074,129 @@ button:hover {
 
     margin-top: 25px;
 
-    padding: 20px;
+    padding: 22px;
 
     border-radius: 12px;
 
     background: #0b1b2e;
 
-    border: 1px solid #24728e;
+    border: 2px solid #24728e;
 }
+
 
 #status-text {
 
     color: #42d9ff;
 
     text-align: center;
+
+    font-size: 14px;
+
+    font-weight: 800;
 }
+
+
+/* =====================================================
+   NOTICE
+===================================================== */
 
 .notice {
 
     margin-top: 25px;
 
-    padding: 15px;
+    padding: 17px;
 
-    background: #0b1727;
+    background:
+        rgba(11, 23, 39, .95);
+
+    border: 1px solid #254b62;
 
     border-radius: 10px;
 
     color: #9fb1c0;
 
-    font-size: 13px;
+    font-size: 12px;
 
-    line-height: 1.6;
+    line-height: 1.7;
 
     text-align: center;
+}
+
+
+/* =====================================================
+   MOBILE
+===================================================== */
+
+@media (max-width: 600px) {
+
+    body {
+
+        padding: 12px;
+    }
+
+
+    .container {
+
+        padding: 22px 16px;
+
+        border-radius: 17px;
+    }
+
+
+    .logo {
+
+        font-size: 25px;
+    }
+
+
+    .upload-box {
+
+        padding: 22px 15px;
+    }
+
+
+    button {
+
+        font-size: 15px;
+    }
 }
 
 </style>
 
 </head>
 
+
 <body>
+
 
 <div class="container">
 
+
+    <!-- =================================================
+         HEADER
+    ================================================== -->
+
     <div class="logo">
+
         Enterprise DigiVerify
+
     </div>
+
 
     <div class="subtitle">
+
         AI-Assisted Aadhaar Document Screening
+
     </div>
 
+
+
+    <!-- =================================================
+         UPLOAD
+    ================================================== -->
+
     <div class="upload-box">
+
 
         <input
             type="file"
@@ -744,38 +1204,67 @@ button:hover {
             accept="image/jpeg,image/png,image/webp"
         >
 
+
         <button
             type="button"
+            id="verify-button"
             onclick="startVerification()"
         >
+
             🔍 ANALYZE & VERIFY DOCUMENT
+
         </button>
 
+
     </div>
+
+
+
+    <!-- =================================================
+         LOADING
+    ================================================== -->
 
     <div id="loading-box">
 
         <div id="status-text">
+
             Initializing OCR...
+
         </div>
 
     </div>
 
+
+
+    <!-- =================================================
+         NOTICE
+    ================================================== -->
+
     <div class="notice">
 
-        <strong>AI Screening Engine</strong><br>
+        <strong>
+            AI Screening Engine
+        </strong>
 
-        OCR • Identity Pattern • Government Indicator •
+        <br>
+
+        OCR • Aadhaar Pattern • Government Indicator •
         DOB • Demographic Data • PIN Code •
         Suspicious Document Detection
 
         <br><br>
 
-        Result represents DigiVerify project-level
-        screening and is not official UIDAI authentication.
+        Result represents DigiVerify
+        project-level screening and is not
+        official UIDAI authentication.
 
     </div>
 
+
+
+    <!-- =================================================
+         HIDDEN FORM
+    ================================================== -->
 
     <form
         method="POST"
@@ -788,6 +1277,7 @@ button:hover {
             id="ocr-hidden-input"
         >
 
+
         <input
             type="hidden"
             name="js_name"
@@ -796,16 +1286,51 @@ button:hover {
 
     </form>
 
+
 </div>
+
 
 
 <script>
 
+/*
+=========================================================
+START VERIFICATION
+=========================================================
+*/
+
 async function startVerification() {
 
-    const input =
-        document.getElementById('file-input');
 
+    const input =
+        document.getElementById(
+            'file-input'
+        );
+
+
+    const button =
+        document.getElementById(
+            'verify-button'
+        );
+
+
+    const loading =
+        document.getElementById(
+            'loading-box'
+        );
+
+
+    const status =
+        document.getElementById(
+            'status-text'
+        );
+
+
+    /*
+    -------------------------------------------------------
+    CHECK FILE
+    -------------------------------------------------------
+    */
 
     if (
         !input.files ||
@@ -820,38 +1345,108 @@ async function startVerification() {
     }
 
 
-    const file = input.files[0];
+    const file =
+        input.files[0];
 
 
-    document.getElementById(
-        'loading-box'
-    ).style.display = 'block';
+    /*
+    -------------------------------------------------------
+    CHECK FILE TYPE
+    -------------------------------------------------------
+    */
+
+    const allowedTypes = [
+
+        'image/jpeg',
+        'image/png',
+        'image/webp'
+
+    ];
 
 
-    const status =
-        document.getElementById(
-            'status-text'
+    if (
+        !allowedTypes.includes(
+            file.type
+        )
+    ) {
+
+        alert(
+            'Please upload JPG, PNG or WEBP image.'
         );
+
+        return;
+    }
+
+
+    /*
+    -------------------------------------------------------
+    CHECK FILE SIZE
+    -------------------------------------------------------
+    */
+
+    if (
+        file.size > 10 * 1024 * 1024
+    ) {
+
+        alert(
+            'Image size must be less than 10 MB.'
+        );
+
+        return;
+    }
+
+
+    /*
+    -------------------------------------------------------
+    UI
+    -------------------------------------------------------
+    */
+
+    button.disabled = true;
+
+    button.style.opacity = '0.65';
+
+    button.style.cursor = 'not-allowed';
+
+    loading.style.display = 'block';
 
 
     try {
 
-        status.textContent =
-            'Loading AI OCR engine...';
 
+        /*
+        ---------------------------------------------------
+        INITIALIZE OCR
+        ---------------------------------------------------
+        */
+
+        status.textContent =
+            'Loading OCR engine...';
+
+
+        /*
+        ---------------------------------------------------
+        TESSERACT OCR
+        ---------------------------------------------------
+        */
 
         const result =
             await Tesseract.recognize(
+
                 file,
+
                 'eng',
+
                 {
 
                     logger: function(message) {
+
 
                         if (
                             message.status ===
                             'recognizing text'
                         ) {
+
 
                             const progress =
                                 Math.round(
@@ -863,32 +1458,72 @@ async function startVerification() {
                                 'OCR Analysis: ' +
                                 progress +
                                 '%';
+
                         }
+
                     }
 
                 }
+
             );
 
 
+        /*
+        ---------------------------------------------------
+        OCR TEXT
+        ---------------------------------------------------
+        */
+
         const text =
-            result.data.text || '';
-
-
-        document.getElementById(
-            'ocr-hidden-input'
-        ).value = text;
+            result &&
+            result.data &&
+            result.data.text
+                ? result.data.text
+                : '';
 
 
         /*
-        =====================================================
-        POSSIBLE NAME EXTRACTION
-        =====================================================
+        ---------------------------------------------------
+        CHECK OCR
+        ---------------------------------------------------
+        */
+
+        if (
+            text.trim() === ''
+        ) {
+
+            throw new Error(
+                'No OCR text detected.'
+            );
+        }
+
+
+        /*
+        ---------------------------------------------------
+        SEND OCR TO PHP
+        ---------------------------------------------------
+        */
+
+        document
+            .getElementById(
+                'ocr-hidden-input'
+            )
+            .value = text;
+
+
+        /*
+        ---------------------------------------------------
+        POSSIBLE NAME
+        ---------------------------------------------------
         */
 
         let possibleName = '';
 
+
         const lines =
-            text.split(/\r?\n/);
+            text.split(
+                /\r?\n/
+            );
 
 
         for (
@@ -897,60 +1532,121 @@ async function startVerification() {
             i++
         ) {
 
+
+            const originalLine =
+                lines[i].trim();
+
+
             const current =
-                lines[i]
-                    .trim()
+                originalLine
                     .toUpperCase();
 
 
             if (
-                current.includes('GOVERNMENT') ||
-                current.includes('INDIA')
+                current.includes(
+                    'GOVERNMENT'
+                ) ||
+                current.includes(
+                    'GOVT'
+                ) ||
+                current === 'INDIA'
             ) {
 
-                if (lines[i + 1]) {
+
+                for (
+                    let j = i + 1;
+                    j < Math.min(
+                        i + 4,
+                        lines.length
+                    );
+                    j++
+                ) {
+
 
                     const candidate =
-                        lines[i + 1].trim();
+                        lines[j].trim();
 
 
                     if (
                         candidate.length >= 3 &&
                         candidate.length <= 60 &&
-                        !/[0-9]/.test(candidate)
+                        !/[0-9]/.test(candidate) &&
+                        !candidate
+                            .toUpperCase()
+                            .includes('AADHAAR') &&
+                        !candidate
+                            .toUpperCase()
+                            .includes('AADHAR') &&
+                        !candidate
+                            .toUpperCase()
+                            .includes('DOB')
                     ) {
+
 
                         possibleName =
                             candidate;
 
+
                         break;
                     }
+
                 }
+
+
+                if (
+                    possibleName !== ''
+                ) {
+
+                    break;
+                }
+
             }
+
         }
 
 
-        document.getElementById(
-            'js-name-input'
-        ).value = possibleName;
+        /*
+        ---------------------------------------------------
+        STORE POSSIBLE NAME
+        ---------------------------------------------------
+        */
 
+        document
+            .getElementById(
+                'js-name-input'
+            )
+            .value =
+                possibleName;
+
+
+        /*
+        ---------------------------------------------------
+        SUBMIT
+        ---------------------------------------------------
+        */
 
         status.textContent =
-            'OCR completed. Running AI screening...';
+            'OCR completed. Running document screening...';
 
 
-        setTimeout(function() {
-
-            document
-                .getElementById('main-form')
-                .submit();
-
-        }, 600);
+        document
+            .getElementById(
+                'main-form'
+            )
+            .submit();
 
 
     } catch (error) {
 
-        console.error(error);
+
+        console.error(
+            'OCR Error:',
+            error
+        );
+
+
+        loading.style.display =
+            'block';
 
 
         status.textContent =
@@ -958,13 +1654,22 @@ async function startVerification() {
 
 
         alert(
-            'Could not analyze this image. Please use a clear JPG or PNG image.'
+            'Could not analyze this image. Please use a clear JPG, PNG or WEBP image.'
         );
+
+
+        button.disabled = false;
+
+        button.style.opacity = '1';
+
+        button.style.cursor = 'pointer';
+
     }
 
 }
 
 </script>
+
 
 </body>
 
