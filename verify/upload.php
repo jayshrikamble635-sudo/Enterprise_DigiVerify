@@ -2,6 +2,16 @@
 error_reporting(E_ALL);
 ini_set('display_errors','1');
 
+/* =====================================================
+   ADDED: SAVE VERIFICATION RESULT TO EXISTING DIGIVerify DB
+   Existing verification/UI logic is unchanged.
+   ===================================================== */
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+require_once __DIR__ . '/../database/config.php';
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ocr_text'])) {
     $ocr = trim($_POST['ocr_text']);
     $jsName = trim($_POST['js_name'] ?? '');
@@ -290,6 +300,86 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ocr_text'])) {
     if ($aadhaar !== '') {
         $p = preg_split('/\s+/', $aadhaar);
         if (count($p) === 3) $masked = 'XXXX XXXX '.$p[2];
+    }
+
+    /* =====================================================
+       ADDED: SAVE RESULT IN EXISTING documents TABLE
+       ===================================================== */
+    try {
+        $loggedEmail = trim($_SESSION['user_email'] ?? '');
+
+        if ($loggedEmail !== '' && isset($conn) && $conn instanceof mysqli && !$conn->connect_errno) {
+            $userId = 0;
+            $userStmt = mysqli_prepare($conn, "SELECT id FROM users WHERE email = ? LIMIT 1");
+
+            if ($userStmt) {
+                mysqli_stmt_bind_param($userStmt, 's', $loggedEmail);
+                mysqli_stmt_execute($userStmt);
+                mysqli_stmt_bind_result($userStmt, $foundUserId);
+                if (mysqli_stmt_fetch($userStmt)) {
+                    $userId = (int)$foundUserId;
+                }
+                mysqli_stmt_close($userStmt);
+            }
+
+            if ($userId > 0) {
+                $dbStatus = ($status === 'APPROVED') ? 'Approved' : 'Rejected';
+                $extractedData = json_encode([
+                    'name' => $name,
+                    'aadhaar' => $masked,
+                    'ai_result' => $aiResult,
+                    'evidence_count' => $evidence,
+                    'qr_status' => $qrVerification,
+                    'qr_data' => $qrData,
+                    'kyc_status' => $kycStatus,
+                    'transaction_id' => $transaction,
+                    'reasons' => array_values(array_unique($reasons)),
+                    'warnings' => array_values(array_unique($warnings))
+                ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+                $verificationMessage = $aiReason;
+                $recommendation = ($status === 'APPROVED') ? 'APPROVE' : 'REJECT';
+                $fraudScore = max(0, min(100, 100 - (float)$score));
+                $aiConfidence = max(0, min(100, (float)$score));
+                $documentName = 'Aadhaar Verification';
+                $documentType = 'Aadhaar';
+                $filePath = 'AI_SCREENING_ONLY';
+
+                $saveStmt = mysqli_prepare(
+                    $conn,
+                    "INSERT INTO documents
+                    (user_id, email, document_type, document_name, file_path,
+                     status, ocr_text, extracted_data, fraud_score, ai_confidence,
+                     recommendation, verification_status, verification_message,
+                     result, is_deleted)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)"
+                );
+
+                if ($saveStmt) {
+                    mysqli_stmt_bind_param(
+                        $saveStmt,
+                        'isssssssddssss',
+                        $userId, $loggedEmail, $documentType, $documentName,
+                        $filePath, $dbStatus, $ocr, $extractedData,
+                        $fraudScore, $aiConfidence, $recommendation,
+                        $status, $verificationMessage, $status
+                    );
+
+                    if (!mysqli_stmt_execute($saveStmt)) {
+                        error_log('DigiVerify: documents insert failed: ' . mysqli_stmt_error($saveStmt));
+                    }
+                    mysqli_stmt_close($saveStmt);
+                } else {
+                    error_log('DigiVerify: documents prepare failed: ' . mysqli_error($conn));
+                }
+            } else {
+                error_log('DigiVerify: no matching users.id found for session email: ' . $loggedEmail);
+            }
+        } else {
+            error_log('DigiVerify: user session/email or database connection unavailable.');
+        }
+    } catch (Throwable $dbSaveError) {
+        error_log('DigiVerify: result save exception: ' . $dbSaveError->getMessage());
     }
 
     $params = [
