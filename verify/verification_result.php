@@ -1345,6 +1345,9 @@ body {
 
 </section>
 
+        <section class="section">
+<div class="section-title">📄 Document Information</div>
+
 
             <div class="details-grid">
 
