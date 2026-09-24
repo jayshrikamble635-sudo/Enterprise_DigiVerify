@@ -1,59 +1,78 @@
 <?php
 
-/*
-=========================================================
-ENTERPRISE DIGIVERIFY
-AI DOCUMENT VERIFICATION RESULT
-ONLY APPROVED / REJECTED
-=========================================================
-*/
+$status =
+    strtoupper(
+        trim(
+            $_GET['status'] ?? 'REJECTED'
+        )
+    );
 
+$score =
+    (int)(
+        $_GET['score'] ?? 0
+    );
 
-/*
-=========================================================
-GET RESULT DATA
-=========================================================
-*/
+$name =
+    trim(
+        $_GET['name'] ?? ''
+    );
 
-$status = isset($_GET['status'])
-    ? strtoupper(trim($_GET['status']))
-    : 'REJECTED';
+$aadhaar =
+    trim(
+        $_GET['aadhaar'] ?? ''
+    );
 
-$score = isset($_GET['score'])
-    ? intval($_GET['score'])
-    : 0;
+$aiResult =
+    strtoupper(
+        trim(
+            $_GET['ai_result'] ?? 'SUSPICIOUS'
+        )
+    );
 
-$name = isset($_GET['name'])
-    ? trim($_GET['name'])
-    : '';
+$aiReason =
+    trim(
+        $_GET['ai_reason'] ?? ''
+    );
 
-$aadhaar = isset($_GET['aadhaar'])
-    ? trim($_GET['aadhaar'])
-    : '';
+$evidenceCount =
+    (int)(
+        $_GET['evidence_count'] ?? 0
+    );
 
-$reasonString = isset($_GET['reason'])
-    ? trim($_GET['reason'])
-    : '';
+$qrStatus =
+    strtoupper(
+        trim(
+            $_GET['qr_status'] ?? 'NOT_VERIFIED'
+        )
+    );
 
-$warningString = isset($_GET['warning'])
-    ? trim($_GET['warning'])
-    : '';
+$qrData =
+    trim(
+        $_GET['qr_data'] ?? ''
+    );
 
-$verificationMode = isset($_GET['verification_mode'])
-    ? trim($_GET['verification_mode'])
-    : 'OCR SCREENING';
+$kycStatus =
+    strtoupper(
+        trim(
+            $_GET['kyc_status'] ?? 'NOT_VERIFIED'
+        )
+    );
 
-$qrStatus = isset($_GET['qr_status'])
-    ? strtoupper(trim($_GET['qr_status']))
-    : 'NOT_CHECKED';
+$transaction =
+    trim(
+        $_GET['transaction_id'] ??
+        'NOT_AVAILABLE'
+    );
 
-$kycStatus = isset($_GET['kyc_status'])
-    ? strtoupper(trim($_GET['kyc_status']))
-    : 'NOT_CHECKED';
+$reasonString =
+    trim(
+        $_GET['reason'] ?? ''
+    );
 
-$transactionId = isset($_GET['transaction_id'])
-    ? trim($_GET['transaction_id'])
-    : 'NOT AVAILABLE';
+$warningString =
+    trim(
+        $_GET['warning'] ?? ''
+    );
 
 
 /*
@@ -70,61 +89,45 @@ if ($aadhaar === '') {
     $aadhaar = 'XXXX XXXX XXXX';
 }
 
-$allowedVerificationModes = [
-    'OCR SCREENING',
-    'OCR + QR STATUS',
-    'OCR + KYC STATUS',
-    'OCR + QR + KYC STATUS'
-];
-
-if (!in_array($verificationMode, $allowedVerificationModes, true)) {
-    $verificationMode = 'OCR SCREENING';
-}
-
-$allowedExternalStatuses = [
-    'NOT_CHECKED',
-    'VERIFIED',
-    'NOT_VERIFIED',
-    'UNAVAILABLE',
-    'DISABLED'
-];
-
-if (!in_array($qrStatus, $allowedExternalStatuses, true)) {
-    $qrStatus = 'NOT_CHECKED';
-}
-
-if (!in_array($kycStatus, $allowedExternalStatuses, true)) {
-    $kycStatus = 'NOT_CHECKED';
-}
-
-if ($transactionId === '') {
-    $transactionId = 'NOT AVAILABLE';
-}
-
-
-/*
-=========================================================
-ONLY TWO VALID STATUSES
-=========================================================
-*/
-
 if ($status !== 'APPROVED') {
     $status = 'REJECTED';
 }
 
+$score =
+    max(
+        0,
+        min(
+            100,
+            $score
+        )
+    );
 
-/*
-=========================================================
-SCORE LIMIT
-=========================================================
-*/
+if (
+    !in_array(
+        $aiResult,
+        ['REAL-LIKE', 'SUSPICIOUS'],
+        true
+    )
+) {
 
-if ($score < 0) {
-    $score = 0;
+    $aiResult = 'SUSPICIOUS';
 }
 
-if ($score > 100) {
-    $score = 100;
+if (
+    $qrStatus !== 'VERIFIED' &&
+    $qrStatus !== 'DETECTED'
+) {
+
+    $qrStatus =
+        'NOT_VERIFIED';
+}
+
+if (
+    $kycStatus !== 'VERIFIED'
+) {
+
+    $kycStatus =
+        'NOT_VERIFIED';
 }
 
 
@@ -134,15 +137,17 @@ REASONS
 =========================================================
 */
 
-$reasons = [];
-
-if ($reasonString !== '') {
-
-    $reasons = explode(
-        '|',
-        $reasonString
+$reasons =
+    array_values(
+        array_filter(
+            explode(
+                '|',
+                $reasonString
+            ),
+            fn($v) =>
+                trim($v) !== ''
+        )
     );
-}
 
 
 /*
@@ -151,75 +156,52 @@ WARNINGS
 =========================================================
 */
 
-$warnings = [];
-
-if ($warningString !== '') {
-
-    $warnings = explode(
-        '|',
-        $warningString
+$warnings =
+    array_values(
+        array_filter(
+            explode(
+                '|',
+                $warningString
+            ),
+            fn($v) =>
+                trim($v) !== ''
+        )
     );
-}
 
 
 /*
 =========================================================
-REMOVE EMPTY VALUES
+UI STATUS
 =========================================================
 */
 
-$reasons = array_values(
-    array_filter(
-        $reasons,
-        function ($value) {
-            return trim($value) !== '';
-        }
-    )
-);
+$approved =
+    $status === 'APPROVED';
 
-$warnings = array_values(
-    array_filter(
-        $warnings,
-        function ($value) {
-            return trim($value) !== '';
-        }
-    )
-);
+$title =
+    $approved
+        ? 'APPROVED'
+        : 'REJECTED';
 
+$subtitle =
+    $approved
+        ? 'AI SCREENING PASSED'
+        : 'AI SCREENING FAILED';
 
-/*
-=========================================================
-STATUS UI
-=========================================================
-*/
+$class =
+    $approved
+        ? 'approved'
+        : 'rejected';
 
-if ($status === 'APPROVED') {
-
-    $title = 'APPROVED';
-
-    $subtitle =
-        'AI SCREENING PASSED';
-
-    $class = 'approved';
-
-    $icon = '✓';
-
-} else {
-
-    $title = 'REJECTED';
-
-    $subtitle =
-        'AI SCREENING FAILED';
-
-    $class = 'rejected';
-
-    $icon = '✕';
-}
+$icon =
+    $approved
+        ? '✓'
+        : '✕';
 
 
 /*
 =========================================================
-SAFE OUTPUT
+HTML ESCAPE
 =========================================================
 */
 
