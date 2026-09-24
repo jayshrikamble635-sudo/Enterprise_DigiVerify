@@ -1301,12 +1301,49 @@ body {
 
         <section class="section">
 
+    <div class="section-title">
+        🤖 AI Document Analysis
+    </div>
 
-            <div class="section-title">
+    <div class="details-grid">
 
-                📄 Document Information
+        <div class="detail-card">
+
+            <div class="detail-label">
+                AI IMAGE SCREENING
+            </div>
+
+            <div
+                class="detail-value
+                <?= $aiResult === 'REAL-LIKE'
+                    ? 'verified'
+                    : 'notverified' ?>"
+            >
+
+                <?= e($aiResult) ?>
 
             </div>
+
+        </div>
+
+        <div class="detail-card">
+
+            <div class="detail-label">
+                DOCUMENT EVIDENCE
+            </div>
+
+            <div class="detail-value">
+
+                <?= e($evidenceCount) ?>
+                / 7 characteristics detected
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
 
 
             <div class="details-grid">
