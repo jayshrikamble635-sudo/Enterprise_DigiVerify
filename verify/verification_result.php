@@ -1,86 +1,29 @@
 <?php
+/* =========================================================
+   ENTERPRISE DIGIVERIFY
+   AI DOCUMENT VERIFICATION RESULT
+   ONLY APPROVED / REJECTED
+========================================================= */
 
-$status =
-    strtoupper(
-        trim(
-            $_GET['status'] ?? 'REJECTED'
-        )
-    );
+$status = strtoupper(trim($_GET['status'] ?? 'REJECTED'));
+$score = (int)($_GET['score'] ?? 0);
+$name = trim($_GET['name'] ?? '');
+$aadhaar = trim($_GET['aadhaar'] ?? '');
+$reasonString = trim($_GET['reason'] ?? '');
+$warningString = trim($_GET['warning'] ?? '');
 
-$score =
-    (int)(
-        $_GET['score'] ?? 0
-    );
+/* AI screening data */
+$aiResult = strtoupper(trim($_GET['ai_result'] ?? 'SUSPICIOUS'));
+$evidenceCount = (int)($_GET['evidence_count'] ?? 0);
+$aiReason = trim($_GET['ai_reason'] ?? '');
 
-$name =
-    trim(
-        $_GET['name'] ?? ''
-    );
+/* Verification status data */
+$qrStatus = strtoupper(trim($_GET['qr_status'] ?? 'NOT_VERIFIED'));
+$kycStatus = strtoupper(trim($_GET['kyc_status'] ?? 'NOT_VERIFIED'));
+$transactionId = trim($_GET['transaction_id'] ?? 'NOT_AVAILABLE');
+$qrData = trim($_GET['qr_data'] ?? '');
 
-$aadhaar =
-    trim(
-        $_GET['aadhaar'] ?? ''
-    );
-
-$aiResult =
-    strtoupper(
-        trim(
-            $_GET['ai_result'] ?? 'SUSPICIOUS'
-        )
-    );
-
-$aiReason =
-    trim(
-        $_GET['ai_reason'] ?? ''
-    );
-
-$evidenceCount =
-    (int)(
-        $_GET['evidence_count'] ?? 0
-    );
-
-$qrStatus =
-    strtoupper(
-        trim(
-            $_GET['qr_status'] ?? 'NOT_VERIFIED'
-        )
-    );
-
-$qrData =
-    trim(
-        $_GET['qr_data'] ?? ''
-    );
-
-$kycStatus =
-    strtoupper(
-        trim(
-            $_GET['kyc_status'] ?? 'NOT_VERIFIED'
-        )
-    );
-
-$transaction =
-    trim(
-        $_GET['transaction_id'] ??
-        'NOT_AVAILABLE'
-    );
-
-$reasonString =
-    trim(
-        $_GET['reason'] ?? ''
-    );
-
-$warningString =
-    trim(
-        $_GET['warning'] ?? ''
-    );
-
-
-/*
-=========================================================
-DEFAULT VALUES
-=========================================================
-*/
-
+/* Safe defaults */
 if ($name === '') {
     $name = 'NOT DETECTED';
 }
@@ -93,127 +36,76 @@ if ($status !== 'APPROVED') {
     $status = 'REJECTED';
 }
 
-$score =
-    max(
-        0,
-        min(
-            100,
-            $score
-        )
-    );
+if ($score < 0) {
+    $score = 0;
+}
 
-if (
-    !in_array(
-        $aiResult,
-        ['REAL-LIKE', 'SUSPICIOUS'],
-        true
-    )
-) {
+if ($score > 100) {
+    $score = 100;
+}
 
+if ($aiResult !== 'REAL-LIKE') {
     $aiResult = 'SUSPICIOUS';
 }
 
-if (
-    $qrStatus !== 'VERIFIED' &&
-    $qrStatus !== 'DETECTED'
-) {
-
-    $qrStatus =
-        'NOT_VERIFIED';
+if ($evidenceCount < 0) {
+    $evidenceCount = 0;
 }
 
-if (
-    $kycStatus !== 'VERIFIED'
-) {
-
-    $kycStatus =
-        'NOT_VERIFIED';
+if ($evidenceCount > 7) {
+    $evidenceCount = 7;
 }
 
+/* Never show the old NOT_CHECKED label */
+if ($qrStatus === '' || $qrStatus === 'NOT_CHECKED') {
+    $qrStatus = 'NOT_VERIFIED';
+}
 
-/*
-=========================================================
-REASONS
-=========================================================
-*/
+if ($kycStatus === '' || $kycStatus === 'NOT_CHECKED') {
+    $kycStatus = 'NOT_VERIFIED';
+}
 
-$reasons =
-    array_values(
-        array_filter(
-            explode(
-                '|',
-                $reasonString
-            ),
-            fn($v) =>
-                trim($v) !== ''
-        )
-    );
+if ($transactionId === '' || $transactionId === 'NOT_CHECKED') {
+    $transactionId = 'NOT_AVAILABLE';
+}
 
+if ($aiReason === '') {
+    if ($aiResult === 'REAL-LIKE') {
+        $aiReason = 'The document contains several expected identity fields, although some evidence is incomplete.';
+    } else {
+        $aiReason = 'The document did not provide sufficient characteristics for a real-like project-level screening result.';
+    }
+}
 
-/*
-=========================================================
-WARNINGS
-=========================================================
-*/
+/* Reasons */
+$reasons = $reasonString !== '' ? explode('|', $reasonString) : [];
+$reasons = array_values(array_filter($reasons, function ($value) {
+    return trim($value) !== '';
+}));
 
-$warnings =
-    array_values(
-        array_filter(
-            explode(
-                '|',
-                $warningString
-            ),
-            fn($v) =>
-                trim($v) !== ''
-        )
-    );
+/* Warnings */
+$warnings = $warningString !== '' ? explode('|', $warningString) : [];
+$warnings = array_values(array_filter($warnings, function ($value) {
+    return trim($value) !== '';
+}));
 
-
-/*
-=========================================================
-UI STATUS
-=========================================================
-*/
-
-$approved =
-    $status === 'APPROVED';
-
-$title =
-    $approved
-        ? 'APPROVED'
-        : 'REJECTED';
-
-$subtitle =
-    $approved
-        ? 'AI SCREENING PASSED'
-        : 'AI SCREENING FAILED';
-
-$class =
-    $approved
-        ? 'approved'
-        : 'rejected';
-
-$icon =
-    $approved
-        ? '✓'
-        : '✕';
-
-
-/*
-=========================================================
-HTML ESCAPE
-=========================================================
-*/
+/* Status UI */
+if ($status === 'APPROVED') {
+    $title = 'APPROVED';
+    $subtitle = 'AI SCREENING PASSED';
+    $class = 'approved';
+    $icon = '✓';
+} else {
+    $title = 'REJECTED';
+    $subtitle = 'AI SCREENING FAILED';
+    $class = 'rejected';
+    $icon = '✕';
+}
 
 function e($value)
 {
-    return htmlspecialchars(
-        (string)$value,
-        ENT_QUOTES,
-        'UTF-8'
-    );
+    return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
 }
-
 ?>
 <!DOCTYPE html>
 
@@ -1297,56 +1189,58 @@ body {
 
 
 
+        <!-- AI DOCUMENT ANALYSIS -->
+
+        <section class="section">
+
+            <div class="section-title">
+                🤖 AI Document Analysis
+            </div>
+
+            <div class="details-grid">
+
+                <div class="detail-card">
+                    <div class="detail-label">
+                        AI IMAGE SCREENING
+                    </div>
+                    <div class="detail-value <?php echo $aiResult === 'REAL-LIKE' ? 'verified' : 'notverified'; ?>">
+                        <?php echo e($aiResult); ?>
+                    </div>
+                </div>
+
+                <div class="detail-card">
+                    <div class="detail-label">
+                        DOCUMENT EVIDENCE
+                    </div>
+                    <div class="detail-value">
+                        <?php echo e($evidenceCount); ?> / 7 characteristics detected
+                    </div>
+                </div>
+
+                <div class="detail-card">
+                    <div class="detail-label">
+                        AI SCREENING REASON
+                    </div>
+                    <div class="detail-value">
+                        <?php echo e($aiReason); ?>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+
         <!-- DOCUMENT INFORMATION -->
 
         <section class="section">
 
-    <div class="section-title">
-        🤖 AI Document Analysis
-    </div>
 
-    <div class="details-grid">
+            <div class="section-title">
 
-        <div class="detail-card">
-
-            <div class="detail-label">
-                AI IMAGE SCREENING
-            </div>
-
-            <div
-                class="detail-value
-                <?= $aiResult === 'REAL-LIKE'
-                    ? 'verified'
-                    : 'notverified' ?>"
-            >
-
-                <?= e($aiResult) ?>
+                📄 Document Information
 
             </div>
-
-        </div>
-
-        <div class="detail-card">
-
-            <div class="detail-label">
-                DOCUMENT EVIDENCE
-            </div>
-
-            <div class="detail-value">
-
-                <?= e($evidenceCount) ?>
-                / 7 characteristics detected
-
-            </div>
-
-        </div>
-
-    </div>
-
-</section>
-
-        <section class="section">
-<div class="section-title">📄 Document Information</div>
 
 
             <div class="details-grid">
@@ -1475,6 +1369,19 @@ body {
 
 
 
+<?php if ($qrData !== ''): ?>
+
+        <section class="section">
+            <div class="section-title">🔳 QR Data Detection</div>
+            <div class="analysis-item reason">
+                <div class="analysis-icon">✓</div>
+                <div><?php echo e($qrData); ?></div>
+            </div>
+        </section>
+
+<?php endif; ?>
+
+
         <!-- ANALYSIS -->
 
         <section class="section">
@@ -1531,21 +1438,6 @@ body {
             <?php endif; ?>
 
 
-            <div class="analysis-list" style="margin-top:10px;">
-
-                <div class="analysis-item reason">
-                    <div class="analysis-icon">✓</div>
-                    <div>QR Verification Status: <?php echo e($qrStatus); ?></div>
-                </div>
-
-                <div class="analysis-item reason">
-                    <div class="analysis-icon">✓</div>
-                    <div>KYC Verification Status: <?php echo e($kycStatus); ?></div>
-                </div>
-
-            </div>
-
-
         </section>
 
 
@@ -1566,27 +1458,6 @@ body {
 
 
                 <div class="analysis-list">
-                    <div class="analysis-item">
-
-    <div class="analysis-icon">
-        <?= $aiResult === 'REAL-LIKE' ? '✓' : '!' ?>
-    </div>
-
-    <div>
-
-        <strong>
-            AI Image Screening:
-        </strong>
-
-        <?= e($aiResult) ?>
-
-        <br>
-
-        <?= e($aiReason) ?>
-
-    </div>
-
-</div>
 
 
                     <?php foreach ($warnings as $warning): ?>
@@ -1640,13 +1511,12 @@ body {
                 using OCR and rule-based analysis.
                 This result does not represent official
                 UIDAI authentication or government
-                validation. Final acceptance of an
-                identity document should be performed
-                using the appropriate official
-                verification process. QR/KYC fields show
-                only the status actually supplied by an
-                authorized integration; NOT_CHECKED does not
-                mean verified.
+                validation. QR and KYC verification
+                are shown only when verification data
+                is available through an authorized
+                integration. NOT_VERIFIED means that
+                official verification was not completed
+                by this project.
 
             </p>
 
