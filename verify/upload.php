@@ -1,78 +1,802 @@
 <?php
+
 error_reporting(E_ALL);
-ini_set('display_errors','1');
+ini_set('display_errors', '1');
 
-if ($_SERVER['REQUEST_METHOD']==='POST' && isset($_POST['ocr_text'])) {
-    $ocr=trim($_POST['ocr_text']);
-    $jsName=trim($_POST['js_name']??'');
-    $qrStatus=strtoupper(trim($_POST['qr_status']??'NOT_DETECTED'));
-    $qrData=trim($_POST['qr_data']??'');
-    $score=0;$reasons=[];$warnings=[];
-    $text=trim(preg_replace('/[ \t]+/',' ',$ocr));
-    $upper=strtoupper($text);
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ocr_text'])) {
 
-    $aadhaar='';
-    foreach([
-        '/\b([0-9]{4})[\s\-]+([0-9]{4})[\s\-]+([0-9]{4})\b/',
-        '/\b([0-9]{4})([0-9]{4})([0-9]{4})\b/'
-    ] as $p){if(preg_match($p,$text,$m)){ $aadhaar="$m[1] $m[2] $m[3]";break;}}
-    if($aadhaar!==''){$score+=35;$reasons[]='12-digit Aadhaar number pattern detected.';}else{$warnings[]='Aadhaar number was not clearly detected.';}
+    $ocr = trim($_POST['ocr_text']);
+    $jsName = trim($_POST['js_name'] ?? '');
 
-    $aadhaarKeyword=(stripos($upper,'AADHAAR')!==false||stripos($upper,'AADHAR')!==false||strpos($text,'आधार')!==false);
-    if($aadhaarKeyword){$score+=20;$reasons[]='Aadhaar identity indicator detected.';}else{$warnings[]='Aadhaar keyword was not clearly detected.';}
+    $qrStatus = strtoupper(
+        trim($_POST['qr_status'] ?? 'NOT_DETECTED')
+    );
 
-    $gov=false;
-    foreach(['GOVERNMENT OF INDIA','GOVT OF INDIA','GOVERNMENT','GOVT.','INDIA','भारत सरकार','भारत'] as $w){if(stripos($upper,strtoupper($w))!==false||strpos($text,$w)!==false){$gov=true;break;}}
-    if($gov){$score+=10;$reasons[]='Government/India indicator detected.';}else{$warnings[]='Government/India indicator not clearly detected.';}
+    $qrData = trim(
+        $_POST['qr_data'] ?? ''
+    );
 
-    $dob=false;
-    foreach(['/\b[0-3]?[0-9][\/\-][0-1]?[0-9][\/\-][12][0-9]{3}\b/','/\b[12][0-9]{3}[\/\-][0-1]?[0-9][\/\-][0-3]?[0-9]\b/','/\bDOB\b/i','/\bDATE OF BIRTH\b/i','/\bYEAR OF BIRTH\b/i'] as $p){if(preg_match($p,$text)){$dob=true;break;}}
-    if($dob){$score+=8;$reasons[]='Date-of-birth information detected.';}else{$warnings[]='Date-of-birth information not detected.';}
+    /*
+    =========================================================
+    DIGIVERIFY INTELLIGENCE ENGINE
+    =========================================================
+    */
 
-    $gender=false;
-    foreach(['MALE','FEMALE','TRANSGENDER','पुरुष','महिला'] as $w){if(stripos($upper,strtoupper($w))!==false||strpos($text,$w)!==false){$gender=true;break;}}
-    if($gender){$score+=5;$reasons[]='Demographic indicator detected.';}
+    $score = 0;
 
-    if(preg_match('/\b[1-9][0-9]{5}\b/',$text)){$score+=5;$reasons[]='Six-digit postal code pattern detected.';}
+    $reasons = [];
+    $warnings = [];
 
-    $name='';
-    foreach(preg_split('/\r\n|\r|\n/',$ocr) as $line){
-        $line=trim($line);if($line==='')continue;$u=strtoupper($line);
-        if(strpos($u,'GOVERNMENT')!==false||strpos($u,'GOVT')!==false||strpos($u,'INDIA')!==false||strpos($u,'AADHAAR')!==false||strpos($u,'AADHAR')!==false||strpos($u,'DATE OF BIRTH')!==false||strpos($u,'DOB')!==false||strpos($u,'YEAR OF BIRTH')!==false||strpos($u,'MALE')!==false||strpos($u,'FEMALE')!==false||strpos($line,'भारत')!==false||strpos($line,'आधार')!==false)continue;
-        if(preg_match('/[0-9]/',$line))continue;
-        $clean=trim(preg_replace('/\s+/',' ',preg_replace('/[^A-Za-zÀ-ÿ .\'\-]/','',$line)));
-        if(strlen($clean)>=3&&strlen($clean)<=60&&preg_match('/[A-Za-z]{2,}/',$clean)){$name=$clean;break;}
+    $text = trim(
+        preg_replace('/[ \t]+/', ' ', $ocr)
+    );
+
+    $upper = strtoupper($text);
+
+    /*
+    =========================================================
+    1. SUSPICIOUS / FAKE / DUPLICATE INDICATORS
+    =========================================================
+    */
+
+    $suspiciousIndicators = [];
+
+    $suspiciousWords = [
+        'DUPLICATE COPY',
+        'DUPLICATE',
+        'FAKE',
+        'SPECIMEN',
+        'SAMPLE COPY',
+        'SAMPLE',
+        'DEMO COPY',
+        'DEMO',
+        'NOT VALID',
+        'INVALID',
+        'FOR DEMO',
+        'TEST COPY'
+    ];
+
+    foreach ($suspiciousWords as $word) {
+
+        if (
+            stripos($upper, $word) !== false
+        ) {
+
+            $suspiciousIndicators[] = $word;
+        }
     }
-    if($name===''&&$jsName!==''){$clean=trim(preg_replace('/\s+/',' ',preg_replace('/[^A-Za-zÀ-ÿ .\'\-]/','',$jsName)));if(strlen($clean)>=3&&strlen($clean)<=60)$name=$clean;}
-    if($name!==''){$score+=7;$reasons[]='Possible document-holder name detected.';}else{$warnings[]='Holder name could not be confidently detected.';}
 
-    $length=strlen(trim($ocr));
-    if($length>=150){$score+=10;$reasons[]='OCR extracted sufficient document information.';}elseif($length>=80){$score+=6;$reasons[]='OCR extracted moderate document information.';}elseif($length>=40){$score+=2;$warnings[]='OCR output is limited.';}else{$warnings[]='OCR output is too short.';}
+    /*
+    =========================================================
+    2. AADHAAR NUMBER
+    =========================================================
+    */
 
-    $susp=[];
-    foreach(['DUPLICATE','SAMPLE','SPECIMEN','FAKE','DEMO','NOT VALID','INVALID','FOR DEMO','SAMPLE COPY'] as $w){if(stripos($upper,$w)!==false)$susp[]=$w;}
-    if($susp){$score-=55;$warnings[]='Suspicious document indicator detected: '.implode(', ',$susp);}
-    $score=max(0,min(100,$score));
+    $aadhaar = '';
 
-    $hasNum=$aadhaar!=='';$hasName=$name!=='';
-    if($susp)$status='REJECTED';
-    elseif($hasNum&&$gov&&$hasName){$status='APPROVED';$reasons[]='Strong document identity pattern detected.';}
-    elseif($aadhaarKeyword&&$gov&&$dob&&$hasName){$status='APPROVED';$reasons[]='Aadhaar identity, government and demographic information matched.';}
-    elseif($aadhaarKeyword&&$gov&&$gender&&$hasName&&$length>=80){$status='APPROVED';$reasons[]='Aadhaar identity and supporting demographic information detected.';}
-    elseif($gov&&$dob&&$gender&&$hasName&&$length>=100){$status='APPROVED';$reasons[]='Multiple supporting identity fields detected despite OCR number limitations.';}
-    else{$status='REJECTED';$reasons[]='Required Aadhaar identity evidence was insufficient for approval.';}
-    if($status==='REJECTED')$warnings[]='Document did not meet the minimum DigiVerify screening criteria.';
+    $aadhaarPatterns = [
 
-    $masked='XXXX XXXX XXXX';
-    if($aadhaar){$p=explode(' ',$aadhaar);if(count($p)===3)$masked='XXXX XXXX '.$p[2];}
-    if($qrStatus!=='DETECTED')$qrStatus='NOT_DETECTED';
-    $kycStatus='NOT_CONFIGURED';
-    $transaction='NOT_AVAILABLE';
-    if($qrStatus==='DETECTED')$reasons[]='QR code detected in the uploaded document image.';else$warnings[]='Secure QR code was not detected by browser QR scanner.';
+        '/\b([0-9]{4})[\s\-]+([0-9]{4})[\s\-]+([0-9]{4})\b/',
 
-    $params=['status'=>$status,'score'=>$score,'name'=>$name,'aadhaar'=>$masked,'qr_status'=>$qrStatus,'qr_data'=>$qrData,'kyc_status'=>$kycStatus,'transaction_id'=>$transaction,'reason'=>implode('|',$reasons),'warning'=>implode('|',$warnings)];
-    header('Location: verification_result.php?'.http_build_query($params));exit;
+        '/\b([0-9]{4})([0-9]{4})([0-9]{4})\b/'
+    ];
+
+    foreach ($aadhaarPatterns as $pattern) {
+
+        if (
+            preg_match(
+                $pattern,
+                $text,
+                $match
+            )
+        ) {
+
+            $aadhaar =
+                $match[1] . ' ' .
+                $match[2] . ' ' .
+                $match[3];
+
+            break;
+        }
+    }
+
+    if ($aadhaar !== '') {
+
+        $score += 25;
+
+        $reasons[] =
+            '12-digit Aadhaar number pattern detected.';
+
+    } else {
+
+        $warnings[] =
+            'Aadhaar number was not clearly detected.';
+    }
+
+    /*
+    =========================================================
+    3. AADHAAR KEYWORD
+    =========================================================
+    */
+
+    $aadhaarKeyword =
+        stripos($upper, 'AADHAAR') !== false ||
+        stripos($upper, 'AADHAR') !== false ||
+        strpos($text, 'आधार') !== false;
+
+    if ($aadhaarKeyword) {
+
+        $score += 15;
+
+        $reasons[] =
+            'Aadhaar identity indicator detected.';
+
+    } else {
+
+        $warnings[] =
+            'Aadhaar identity keyword was not clearly detected.';
+    }
+
+    /*
+    =========================================================
+    4. GOVERNMENT OF INDIA
+    =========================================================
+    */
+
+    $governmentDetected = false;
+
+    $governmentIndicators = [
+
+        'GOVERNMENT OF INDIA',
+        'GOVT OF INDIA',
+        'GOVERNMENT',
+        'GOVT.',
+        'INDIA',
+        'भारत सरकार',
+        'भारत'
+    ];
+
+    foreach (
+        $governmentIndicators
+        as $indicator
+    ) {
+
+        if (
+            stripos(
+                $upper,
+                strtoupper($indicator)
+            ) !== false
+            ||
+            strpos(
+                $text,
+                $indicator
+            ) !== false
+        ) {
+
+            $governmentDetected = true;
+            break;
+        }
+    }
+
+    if ($governmentDetected) {
+
+        $score += 10;
+
+        $reasons[] =
+            'Government of India indicator detected.';
+
+    } else {
+
+        $warnings[] =
+            'Government/India indicator was not clearly detected.';
+    }
+
+    /*
+    =========================================================
+    5. DOB
+    =========================================================
+    */
+
+    $dobDetected = false;
+
+    $dobPatterns = [
+
+        '/\b[0-3]?[0-9][\/\-][0-1]?[0-9][\/\-][12][0-9]{3}\b/',
+
+        '/\b[12][0-9]{3}[\/\-][0-1]?[0-9][\/\-][0-3]?[0-9]\b/',
+
+        '/\bDOB\b/i',
+
+        '/\bDATE OF BIRTH\b/i',
+
+        '/\bYEAR OF BIRTH\b/i'
+    ];
+
+    foreach ($dobPatterns as $pattern) {
+
+        if (
+            preg_match(
+                $pattern,
+                $text
+            )
+        ) {
+
+            $dobDetected = true;
+            break;
+        }
+    }
+
+    if ($dobDetected) {
+
+        $score += 10;
+
+        $reasons[] =
+            'Date-of-birth information detected.';
+
+    } else {
+
+        $warnings[] =
+            'Date-of-birth information was not detected.';
+    }
+
+    /*
+    =========================================================
+    6. GENDER
+    =========================================================
+    */
+
+    $genderDetected = false;
+
+    $genderWords = [
+
+        'MALE',
+        'FEMALE',
+        'TRANSGENDER',
+        'पुरुष',
+        'महिला'
+    ];
+
+    foreach ($genderWords as $gender) {
+
+        if (
+            stripos(
+                $upper,
+                strtoupper($gender)
+            ) !== false
+            ||
+            strpos(
+                $text,
+                $gender
+            ) !== false
+        ) {
+
+            $genderDetected = true;
+            break;
+        }
+    }
+
+    if ($genderDetected) {
+
+        $score += 8;
+
+        $reasons[] =
+            'Demographic gender information detected.';
+    }
+
+    /*
+    =========================================================
+    7. PIN CODE
+    =========================================================
+    */
+
+    $pinDetected =
+        preg_match(
+            '/\b[1-9][0-9]{5}\b/',
+            $text
+        );
+
+    if ($pinDetected) {
+
+        $score += 5;
+
+        $reasons[] =
+            'Six-digit postal code pattern detected.';
+    }
+
+    /*
+    =========================================================
+    8. HOLDER NAME
+    =========================================================
+    */
+
+    $detectedName = '';
+
+    $lines = preg_split(
+        '/\r\n|\r|\n/',
+        $ocr
+    );
+
+    foreach ($lines as $line) {
+
+        $line = trim($line);
+
+        if ($line === '') {
+            continue;
+        }
+
+        $lineUpper =
+            strtoupper($line);
+
+        /*
+        Ignore known document headings
+        */
+
+        if (
+            strpos($lineUpper, 'GOVERNMENT') !== false ||
+            strpos($lineUpper, 'GOVT') !== false ||
+            strpos($lineUpper, 'INDIA') !== false ||
+            strpos($lineUpper, 'AADHAAR') !== false ||
+            strpos($lineUpper, 'AADHAR') !== false ||
+            strpos($lineUpper, 'DATE OF BIRTH') !== false ||
+            strpos($lineUpper, 'DOB') !== false ||
+            strpos($lineUpper, 'YEAR OF BIRTH') !== false ||
+            strpos($lineUpper, 'MALE') !== false ||
+            strpos($lineUpper, 'FEMALE') !== false ||
+            strpos($line, 'भारत') !== false ||
+            strpos($line, 'आधार') !== false
+        ) {
+
+            continue;
+        }
+
+        /*
+        Ignore lines containing numbers
+        */
+
+        if (
+            preg_match(
+                '/[0-9]/',
+                $line
+            )
+        ) {
+
+            continue;
+        }
+
+        $clean =
+            trim(
+                preg_replace(
+                    '/\s+/',
+                    ' ',
+                    preg_replace(
+                        '/[^A-Za-zÀ-ÿ .\'\-]/',
+                        '',
+                        $line
+                    )
+                )
+            );
+
+        if (
+            strlen($clean) >= 3 &&
+            strlen($clean) <= 60 &&
+            preg_match(
+                '/[A-Za-z]{2,}/',
+                $clean
+            )
+        ) {
+
+            $detectedName = $clean;
+
+            break;
+        }
+    }
+
+    /*
+    JS name fallback
+    */
+
+    if (
+        $detectedName === '' &&
+        $jsName !== ''
+    ) {
+
+        $clean =
+            trim(
+                preg_replace(
+                    '/\s+/',
+                    ' ',
+                    preg_replace(
+                        '/[^A-Za-zÀ-ÿ .\'\-]/',
+                        '',
+                        $jsName
+                    )
+                )
+            );
+
+        if (
+            strlen($clean) >= 3 &&
+            strlen($clean) <= 60
+        ) {
+
+            $detectedName = $clean;
+        }
+    }
+
+    if ($detectedName !== '') {
+
+        $score += 10;
+
+        $reasons[] =
+            'Possible document-holder name detected.';
+
+    } else {
+
+        $warnings[] =
+            'Document-holder name could not be confidently detected.';
+    }
+
+    /*
+    =========================================================
+    9. OCR QUALITY
+    =========================================================
+    */
+
+    $ocrLength =
+        strlen(
+            trim($ocr)
+        );
+
+    if ($ocrLength >= 150) {
+
+        $score += 12;
+
+        $reasons[] =
+            'OCR extracted sufficient document information.';
+
+    } elseif ($ocrLength >= 80) {
+
+        $score += 8;
+
+        $reasons[] =
+            'OCR extracted moderate document information.';
+
+    } elseif ($ocrLength >= 40) {
+
+        $score += 3;
+
+        $warnings[] =
+            'OCR output is limited.';
+
+    } else {
+
+        $warnings[] =
+            'OCR output is too short.';
+    }
+
+    /*
+    =========================================================
+    10. QR DETECTION
+    =========================================================
+    */
+
+    $qrDetected =
+        ($qrStatus === 'DETECTED');
+
+    if ($qrDetected) {
+
+        $score += 10;
+
+        $reasons[] =
+            'QR code was detected in the uploaded document.';
+
+    } else {
+
+        $warnings[] =
+            'No readable QR code was detected.';
+    }
+
+    /*
+    =========================================================
+    11. AI-LIKE DOCUMENT SCREENING
+    =========================================================
+    */
+
+    $aiResult = 'REAL-LIKE';
+
+    $aiReason = '';
+
+    /*
+    HARD SUSPICION
+    */
+
+    if (
+        count($suspiciousIndicators) > 0
+    ) {
+
+        $aiResult = 'SUSPICIOUS';
+
+        $aiReason =
+            'Suspicious document indicator detected: ' .
+            implode(
+                ', ',
+                $suspiciousIndicators
+            );
+
+        $score -= 40;
+
+        $warnings[] =
+            $aiReason;
+    }
+
+    /*
+    =========================================================
+    12. DOCUMENT EVIDENCE SCORE
+    =========================================================
+    */
+
+    $evidenceCount = 0;
+
+    if ($aadhaar !== '') {
+        $evidenceCount++;
+    }
+
+    if ($aadhaarKeyword) {
+        $evidenceCount++;
+    }
+
+    if ($governmentDetected) {
+        $evidenceCount++;
+    }
+
+    if ($dobDetected) {
+        $evidenceCount++;
+    }
+
+    if ($genderDetected) {
+        $evidenceCount++;
+    }
+
+    if ($detectedName !== '') {
+        $evidenceCount++;
+    }
+
+    if ($qrDetected) {
+        $evidenceCount++;
+    }
+
+    /*
+    =========================================================
+    13. REAL-LIKE / SUSPICIOUS DECISION
+    =========================================================
+    */
+
+    if (
+        count($suspiciousIndicators) === 0
+    ) {
+
+        if (
+            $evidenceCount >= 5
+        ) {
+
+            $aiResult = 'REAL-LIKE';
+
+            $aiReason =
+                'Multiple Aadhaar document characteristics were detected.';
+
+        } elseif (
+            $evidenceCount >= 3
+        ) {
+
+            $aiResult = 'REAL-LIKE';
+
+            $aiReason =
+                'The document contains several expected identity fields, although some evidence is incomplete.';
+
+        } else {
+
+            $aiResult = 'SUSPICIOUS';
+
+            $aiReason =
+                'Insufficient document characteristics were detected.';
+        }
+    }
+
+    /*
+    =========================================================
+    14. FINAL SCORE
+    =========================================================
+    */
+
+    $score =
+        max(
+            0,
+            min(
+                100,
+                $score
+            )
+        );
+
+    /*
+    =========================================================
+    15. FINAL APPROVED / REJECTED
+    =========================================================
+    */
+
+    if (
+        count($suspiciousIndicators) > 0
+    ) {
+
+        $status = 'REJECTED';
+
+        $reasons[] =
+            'Document contains an explicit suspicious/duplicate indicator.';
+
+    } elseif (
+        $evidenceCount >= 5
+    ) {
+
+        $status = 'APPROVED';
+
+        $reasons[] =
+            'Multiple document identity and demographic characteristics matched.';
+
+    } elseif (
+        $evidenceCount >= 3 &&
+        $governmentDetected &&
+        $detectedName !== ''
+    ) {
+
+        $status = 'APPROVED';
+
+        $reasons[] =
+            'Document contains sufficient identity evidence for project-level screening.';
+
+    } else {
+
+        $status = 'REJECTED';
+
+        $reasons[] =
+            'Required Aadhaar identity evidence was insufficient for approval.';
+    }
+
+    /*
+    =========================================================
+    16. REJECTED WARNING
+    =========================================================
+    */
+
+    if (
+        $status === 'REJECTED'
+    ) {
+
+        $warnings[] =
+            'Document did not meet the minimum DigiVerify screening criteria.';
+    }
+
+    /*
+    =========================================================
+    17. MASK AADHAAR
+    =========================================================
+    */
+
+    $maskedAadhaar =
+        'XXXX XXXX XXXX';
+
+    if (
+        $aadhaar !== ''
+    ) {
+
+        $parts =
+            preg_split(
+                '/\s+/',
+                $aadhaar
+            );
+
+        if (
+            count($parts) === 3
+        ) {
+
+            $maskedAadhaar =
+                'XXXX XXXX ' .
+                $parts[2];
+        }
+    }
+
+    /*
+    =========================================================
+    18. QR STATUS
+    =========================================================
+    
+    IMPORTANT:
+    Browser jsQR only detects/decodes QR.
+    It does NOT validate UIDAI's digital signature.
+    */
+
+    if ($qrDetected) {
+
+        $qrVerification =
+            'DETECTED';
+
+    } else {
+
+        $qrVerification =
+            'NOT_VERIFIED';
+    }
+
+    /*
+    =========================================================
+    19. KYC
+    =========================================================
+    */
+
+    $kycStatus =
+        'NOT_VERIFIED';
+
+    $transaction =
+        'NOT_AVAILABLE';
+
+    /*
+    =========================================================
+    20. SEND RESULT
+    =========================================================
+    */
+
+    $params = [
+
+        'status' =>
+            $status,
+
+        'score' =>
+            $score,
+
+        'name' =>
+            $detectedName,
+
+        'aadhaar' =>
+            $maskedAadhaar,
+
+        'ai_result' =>
+            $aiResult,
+
+        'ai_reason' =>
+            $aiReason,
+
+        'evidence_count' =>
+            $evidenceCount,
+
+        'qr_status' =>
+            $qrVerification,
+
+        'qr_data' =>
+            $qrData,
+
+        'kyc_status' =>
+            $kycStatus,
+
+        'transaction_id' =>
+            $transaction,
+
+        'reason' =>
+            implode(
+                '|',
+                $reasons
+            ),
+
+        'warning' =>
+            implode(
+                '|',
+                $warnings
+            )
+    ];
+
+    header(
+        'Location: verification_result.php?' .
+        http_build_query($params)
+    );
+
+    exit;
 }
+
 ?>
 <!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Enterprise DigiVerify - Document Verification</title><script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <style>
