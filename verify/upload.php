@@ -3,7 +3,6 @@
 error_reporting(E_ALL);
 ini_set('display_errors', '1');
 
-
 /*
 =========================================================
 ENTERPRISE DIGIVERIFY
@@ -39,7 +38,7 @@ if (
 
     /*
     =====================================================
-    NORMALIZE OCR
+    1. NORMALIZE OCR
     =====================================================
     */
 
@@ -56,7 +55,7 @@ if (
 
     /*
     =====================================================
-    1. AADHAAR NUMBER DETECTION
+    2. AADHAAR NUMBER DETECTION
     =====================================================
     */
 
@@ -64,10 +63,14 @@ if (
 
     $numberPatterns = [
 
+        // 1234 5678 9012
         '/\b([0-9]{4})[\s\-]+([0-9]{4})[\s\-]+([0-9]{4})\b/',
 
-        '/\b([0-9]{4})([0-9]{4})([0-9]{4})\b/'
+        // 1234-5678-9012
+        '/\b([0-9]{4})[\-]+([0-9]{4})[\-]+([0-9]{4})\b/',
 
+        // 123456789012
+        '/\b([0-9]{4})([0-9]{4})([0-9]{4})\b/'
     ];
 
 
@@ -101,7 +104,7 @@ if (
 
     /*
     =====================================================
-    2. AADHAAR KEYWORD
+    3. AADHAAR KEYWORD
     =====================================================
     */
 
@@ -119,8 +122,15 @@ if (
     foreach ($aadhaarWords as $word) {
 
         if (
-            stripos($upper, strtoupper($word)) !== false ||
-            strpos($text, $word) !== false
+            stripos(
+                $upper,
+                strtoupper($word)
+            ) !== false
+            ||
+            strpos(
+                $text,
+                $word
+            ) !== false
         ) {
 
             $aadhaarKeyword = true;
@@ -146,19 +156,20 @@ if (
 
     /*
     =====================================================
-    3. GOVERNMENT / INDIA INDICATOR
+    4. GOVERNMENT / INDIA INDICATOR
     =====================================================
     */
 
     $govKeyword = false;
 
-
     $governmentPatterns = [
 
         'GOVERNMENT OF INDIA',
         'GOVT OF INDIA',
+        'GOVERNMENT OF INDIA',
         'GOVERNMENT',
         'GOVT.',
+        'GOVT',
         'INDIA',
         'भारत सरकार',
         'भारत'
@@ -169,8 +180,15 @@ if (
     foreach ($governmentPatterns as $word) {
 
         if (
-            stripos($upper, strtoupper($word)) !== false ||
-            strpos($text, $word) !== false
+            stripos(
+                $upper,
+                strtoupper($word)
+            ) !== false
+            ||
+            strpos(
+                $text,
+                $word
+            ) !== false
         ) {
 
             $govKeyword = true;
@@ -196,25 +214,31 @@ if (
 
     /*
     =====================================================
-    4. DOB CHECK
+    5. DOB CHECK
     =====================================================
     */
 
     $dobFound = false;
 
-
     $dobPatterns = [
 
+        // 06/10/2006
         '/\b[0-3]?[0-9][\/\-][0-1]?[0-9][\/\-][12][0-9]{3}\b/',
 
+        // 2006/10/06
         '/\b[12][0-9]{3}[\/\-][0-1]?[0-9][\/\-][0-3]?[0-9]\b/',
 
+        // DOB
         '/\bDOB\b/i',
 
+        // DATE OF BIRTH
         '/\bDATE OF BIRTH\b/i',
 
-        '/\bYEAR OF BIRTH\b/i'
+        // YEAR OF BIRTH
+        '/\bYEAR OF BIRTH\b/i',
 
+        // जन्म तारीख
+        '/जन्म/'
     ];
 
 
@@ -245,12 +269,11 @@ if (
 
     /*
     =====================================================
-    5. GENDER / DEMOGRAPHIC CHECK
+    6. GENDER / DEMOGRAPHIC CHECK
     =====================================================
     */
 
     $genderFound = false;
-
 
     $genderWords = [
 
@@ -266,8 +289,15 @@ if (
     foreach ($genderWords as $word) {
 
         if (
-            stripos($upper, strtoupper($word)) !== false ||
-            strpos($text, $word) !== false
+            stripos(
+                $upper,
+                strtoupper($word)
+            ) !== false
+            ||
+            strpos(
+                $text,
+                $word
+            ) !== false
         ) {
 
             $genderFound = true;
@@ -288,12 +318,11 @@ if (
 
     /*
     =====================================================
-    6. PIN CODE
+    7. PIN CODE
     =====================================================
     */
 
     $pinFound = false;
-
 
     if (
         preg_match(
@@ -313,12 +342,11 @@ if (
 
     /*
     =====================================================
-    7. NAME DETECTION
+    8. NAME DETECTION
     =====================================================
     */
 
     $detectedName = '';
-
 
     $lines = preg_split(
         '/\r\n|\r|\n/',
@@ -330,17 +358,17 @@ if (
 
         $line = trim($line);
 
-
         if ($line === '') {
             continue;
         }
-
 
         $u = strtoupper($line);
 
 
         /*
-        Skip headings
+        -----------------------------------------------------
+        SKIP HEADINGS
+        -----------------------------------------------------
         */
 
         if (
@@ -349,11 +377,16 @@ if (
             strpos($u, 'INDIA') !== false ||
             strpos($u, 'AADHAAR') !== false ||
             strpos($u, 'AADHAR') !== false ||
+            strpos($u, 'UNIQUE IDENTIFICATION') !== false ||
+            strpos($u, 'AUTHORITY OF INDIA') !== false ||
             strpos($u, 'DATE OF BIRTH') !== false ||
             strpos($u, 'DOB') !== false ||
             strpos($u, 'YEAR OF BIRTH') !== false ||
             strpos($u, 'MALE') !== false ||
             strpos($u, 'FEMALE') !== false ||
+            strpos($u, 'TRANSGENDER') !== false ||
+            strpos($u, 'ADDRESS') !== false ||
+            strpos($u, 'PIN') !== false ||
             strpos($line, 'भारत') !== false ||
             strpos($line, 'आधार') !== false
         ) {
@@ -363,11 +396,16 @@ if (
 
 
         /*
-        Skip numeric lines
+        -----------------------------------------------------
+        SKIP NUMERIC LINES
+        -----------------------------------------------------
         */
 
         if (
-            preg_match('/[0-9]/', $line)
+            preg_match(
+                '/[0-9]/',
+                $line
+            )
         ) {
 
             continue;
@@ -375,7 +413,9 @@ if (
 
 
         /*
-        Remove OCR garbage
+        -----------------------------------------------------
+        CLEAN OCR GARBAGE
+        -----------------------------------------------------
         */
 
         $cleanName = preg_replace(
@@ -395,25 +435,74 @@ if (
 
 
         /*
-        Basic name quality
+        -----------------------------------------------------
+        NAME QUALITY
+        -----------------------------------------------------
         */
 
         if (
             strlen($cleanName) >= 3 &&
             strlen($cleanName) <= 60 &&
-            preg_match('/[A-Za-z]{2,}/', $cleanName)
+            preg_match(
+                '/[A-Za-z]{2,}/',
+                $cleanName
+            )
         ) {
 
-            $detectedName = $cleanName;
+            /*
+            Avoid obvious non-name English words
+            */
 
-            break;
+            $badNameWords = [
+
+                'GOVERNMENT',
+                'INDIA',
+                'IDENTIFICATION',
+                'AUTHORITY',
+                'ADDRESS',
+                'YEAR',
+                'BIRTH',
+                'HELP',
+                'HELPLINE',
+                'NUMBER',
+                'COPY',
+                'ORIGINAL',
+                'DOCUMENT'
+
+            ];
+
+
+            $isBadName = false;
+
+            foreach ($badNameWords as $badWord) {
+
+                if (
+                    stripos(
+                        $cleanName,
+                        $badWord
+                    ) !== false
+                ) {
+
+                    $isBadName = true;
+
+                    break;
+                }
+            }
+
+
+            if (!$isBadName) {
+
+                $detectedName = $cleanName;
+
+                break;
+            }
         }
     }
 
 
     /*
     =====================================================
-    JS NAME FALLBACK
+    9. JAVASCRIPT NAME FALLBACK
     =====================================================
     */
 
@@ -464,7 +553,7 @@ if (
 
     /*
     =====================================================
-    8. OCR QUALITY
+    10. OCR QUALITY
     =====================================================
     */
 
@@ -503,21 +592,27 @@ if (
 
     /*
     =====================================================
-    9. SUSPICIOUS DOCUMENT WORDS
+    11. SUSPICIOUS DOCUMENT WORDS
     =====================================================
     */
 
     $suspiciousWords = [
 
         'DUPLICATE',
+        'DUPLICATE COPY',
         'SAMPLE',
+        'SAMPLE COPY',
         'SPECIMEN',
         'FAKE',
+        'FAKE COPY',
         'DEMO',
+        'DEMO COPY',
         'NOT VALID',
         'INVALID',
         'FOR DEMO',
-        'SAMPLE COPY'
+        'FOR SAMPLE',
+        'TEST COPY',
+        'TRAINING COPY'
 
     ];
 
@@ -528,7 +623,10 @@ if (
     foreach ($suspiciousWords as $word) {
 
         if (
-            stripos($upper, $word) !== false
+            stripos(
+                $upper,
+                $word
+            ) !== false
         ) {
 
             $suspiciousFound[] =
@@ -539,7 +637,7 @@ if (
 
     /*
     =====================================================
-    10. SUSPICIOUS PENALTY
+    12. SUSPICIOUS PENALTY
     =====================================================
     */
 
@@ -553,21 +651,60 @@ if (
             'Suspicious document indicator detected: ' .
             implode(
                 ', ',
-                $suspiciousFound
+                array_unique($suspiciousFound)
             );
     }
 
 
     /*
     =====================================================
-    SCORE LIMIT
+    13. ADDITIONAL STRUCTURAL CHECK
+    =====================================================
+    */
+
+    /*
+    A genuine-looking Aadhaar screening should normally
+    contain multiple identity signals.
+
+    This does NOT claim official authenticity.
+    */
+
+    $identitySignals = 0;
+
+    if ($hasAadhaarNumber ?? false) {
+        $identitySignals++;
+    }
+
+    if ($aadhaarKeyword) {
+        $identitySignals++;
+    }
+
+    if ($govKeyword) {
+        $identitySignals++;
+    }
+
+    if ($dobFound) {
+        $identitySignals++;
+    }
+
+    if ($genderFound) {
+        $identitySignals++;
+    }
+
+    if ($detectedName !== '') {
+        $identitySignals++;
+    }
+
+
+    /*
+    =====================================================
+    14. SCORE LIMIT
     =====================================================
     */
 
     if ($score < 0) {
         $score = 0;
     }
-
 
     if ($score > 100) {
         $score = 100;
@@ -576,7 +713,7 @@ if (
 
     /*
     =====================================================
-    FINAL DECISION ENGINE
+    15. FINAL DECISION ENGINE
     ONLY APPROVED / REJECTED
     =====================================================
     */
@@ -584,14 +721,11 @@ if (
     $hasAadhaarNumber =
         ($aadhaar !== '');
 
-
     $hasAadhaarWord =
         ($aadhaarKeyword === true);
 
-
     $hasGovIndicator =
         ($govKeyword === true);
-
 
     $hasName =
         ($detectedName !== '');
@@ -600,7 +734,8 @@ if (
     /*
     -----------------------------------------------------
     RULE 1
-    SUSPICIOUS DOCUMENT = REJECTED
+    SUSPICIOUS / DUPLICATE / SAMPLE / FAKE
+    ALWAYS REJECTED
     -----------------------------------------------------
     */
 
@@ -609,15 +744,22 @@ if (
     ) {
 
         $status = 'REJECTED';
+
+        $reasons[] =
+            'Suspicious or duplicate document indicator detected.';
     }
 
 
     /*
     -----------------------------------------------------
     RULE 2
-    12-DIGIT AADHAAR NUMBER
-    + GOVERNMENT INDICATOR
-    + NAME
+    STRONG IDENTITY PATTERN
+
+    12 DIGIT AADHAAR
+    +
+    GOVERNMENT
+    +
+    NAME
     -----------------------------------------------------
     */
 
@@ -630,17 +772,14 @@ if (
         $status = 'APPROVED';
 
         $reasons[] =
-            'Strong document identity pattern detected.';
+            'Aadhaar number, government indicator and holder name detected.';
     }
 
 
     /*
     -----------------------------------------------------
     RULE 3
-    AADHAAR KEYWORD
-    + GOVERNMENT
-    + DOB
-    + NAME
+    AADHAAR + GOVERNMENT + DOB + NAME
     -----------------------------------------------------
     */
 
@@ -654,51 +793,24 @@ if (
         $status = 'APPROVED';
 
         $reasons[] =
-            'Aadhaar identity, government and demographic information matched.';
+            'Aadhaar identity, government indicator, DOB and holder name detected.';
     }
 
 
     /*
     -----------------------------------------------------
     RULE 4
-    AADHAAR KEYWORD
-    + GOVERNMENT
-    + GENDER
-    + NAME
-    + OCR QUALITY
-    -----------------------------------------------------
-    */
+    REAL DOCUMENT OCR FALLBACK
 
-    elseif (
-        $hasAadhaarWord &&
-        $hasGovIndicator &&
-        $genderFound &&
-        $hasName &&
-        $length >= 80
-    ) {
-
-        $status = 'APPROVED';
-
-        $reasons[] =
-            'Aadhaar identity and supporting demographic information detected.';
-    }
-
-
-    /*
-    -----------------------------------------------------
-    RULE 5
-    REAL-DOCUMENT OCR FALLBACK
     GOVERNMENT
-    + DOB
-    + GENDER
-    + NAME
-    + SUFFICIENT OCR
-    -----------------------------------------------------
-    
-    IMPORTANT:
-    This handles cases where Tesseract fails to read
-    the Aadhaar number / Aadhaar keyword but detects
-    multiple genuine document fields.
+    +
+    DOB
+    +
+    GENDER
+    +
+    NAME
+    +
+    OCR >= 100
     -----------------------------------------------------
     */
 
@@ -713,14 +825,58 @@ if (
         $status = 'APPROVED';
 
         $reasons[] =
-            'Multiple supporting identity fields detected despite OCR number limitations.';
+            'Multiple identity fields detected despite OCR limitations.';
+    }
+
+
+    /*
+    -----------------------------------------------------
+    RULE 5
+    AADHAAR + GOVERNMENT + GENDER + NAME
+
+    Useful when DOB is missed by OCR.
+    -----------------------------------------------------
+    */
+
+    elseif (
+        $hasAadhaarWord &&
+        $hasGovIndicator &&
+        $genderFound &&
+        $hasName &&
+        $length >= 80
+    ) {
+
+        $status = 'APPROVED';
+
+        $reasons[] =
+            'Aadhaar identity and demographic information detected.';
     }
 
 
     /*
     -----------------------------------------------------
     RULE 6
-    EVERYTHING ELSE = REJECTED
+    12 DIGIT NUMBER + GOVERNMENT + DOB + GENDER
+    -----------------------------------------------------
+    */
+
+    elseif (
+        $hasAadhaarNumber &&
+        $hasGovIndicator &&
+        $dobFound &&
+        $genderFound
+    ) {
+
+        $status = 'APPROVED';
+
+        $reasons[] =
+            'Aadhaar number and multiple supporting identity fields detected.';
+    }
+
+
+    /*
+    -----------------------------------------------------
+    EVERYTHING ELSE
     -----------------------------------------------------
     */
 
@@ -729,26 +885,26 @@ if (
         $status = 'REJECTED';
 
         $reasons[] =
-            'Required Aadhaar identity evidence was insufficient for approval.';
+            'Required Aadhaar document evidence was insufficient for approval.';
     }
 
 
     /*
     =====================================================
-    EXTRA WARNING FOR REJECTED DOCUMENTS
+    16. REJECTED WARNING
     =====================================================
     */
 
     if ($status === 'REJECTED') {
 
         $warnings[] =
-            'Document did not meet the minimum DigiVerify screening criteria.';
+            'Document did not meet the DigiVerify screening criteria.';
     }
 
 
     /*
     =====================================================
-    MASK AADHAAR
+    17. MASK AADHAAR
     =====================================================
     */
 
@@ -778,7 +934,41 @@ if (
 
     /*
     =====================================================
-    SEND RESULT
+    18. REMOVE DUPLICATE REASONS / WARNINGS
+    =====================================================
+    */
+
+    $reasons =
+        array_values(
+            array_unique(
+                array_filter(
+                    $reasons,
+                    function ($value) {
+
+                        return trim($value) !== '';
+                    }
+                )
+            )
+        );
+
+
+    $warnings =
+        array_values(
+            array_unique(
+                array_filter(
+                    $warnings,
+                    function ($value) {
+
+                        return trim($value) !== '';
+                    }
+                )
+            )
+        );
+
+
+    /*
+    =====================================================
+    19. SEND RESULT
     =====================================================
     */
 
@@ -807,7 +997,6 @@ if (
                 '|',
                 $warnings
             )
-
     ];
 
 
@@ -816,12 +1005,10 @@ if (
         http_build_query($params)
     );
 
-
     exit;
 }
 
 ?>
-
 
 <!DOCTYPE html>
 
@@ -841,7 +1028,9 @@ Enterprise DigiVerify - Document Verification
 </title>
 
 
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script
+    src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js">
+</script>
 
 
 <style>
@@ -865,16 +1054,19 @@ body {
     color: #ffffff;
 
     background:
+
         radial-gradient(
             circle at top left,
             #12345b,
             transparent 40%
         ),
+
         radial-gradient(
             circle at bottom right,
             #063b45,
             transparent 40%
         ),
+
         #050b16;
 
     display: flex;
@@ -896,6 +1088,7 @@ body {
     padding: 40px;
 
     background:
+
         linear-gradient(
             145deg,
             rgba(8, 25, 45, .98),
@@ -907,6 +1100,7 @@ body {
     border-radius: 22px;
 
     box-shadow:
+
         0 0 50px
         rgba(0, 190, 255, .16);
 }
@@ -1004,6 +1198,7 @@ button {
     border-radius: 10px;
 
     background:
+
         linear-gradient(
             90deg,
             #00a8e8,
@@ -1019,6 +1214,7 @@ button {
     cursor: pointer;
 
     box-shadow:
+
         0 0 20px
         rgba(0, 212, 255, .18);
 
@@ -1031,8 +1227,19 @@ button:hover {
     transform: translateY(-2px);
 
     box-shadow:
+
         0 0 28px
         rgba(0, 212, 255, .30);
+}
+
+
+button:disabled {
+
+    opacity: .65;
+
+    cursor: not-allowed;
+
+    transform: none;
 }
 
 
@@ -1226,6 +1433,13 @@ button:hover {
 <script>
 
 async function startVerification() {
+
+
+    /*
+    =====================================================
+    GET ELEMENTS
+    =====================================================
+    */
 
     const input =
         document.getElementById(
@@ -1423,7 +1637,7 @@ async function startVerification() {
 
         /*
         =================================================
-        POSSIBLE NAME
+        POSSIBLE NAME DETECTION
         =================================================
         */
 
@@ -1446,20 +1660,39 @@ async function startVerification() {
                 lines[i].trim();
 
 
+            if (
+                originalLine === ''
+            ) {
+                continue;
+            }
+
+
             const current =
                 originalLine.toUpperCase();
 
 
+            /*
+            ---------------------------------------------
+            LOOK AFTER GOVERNMENT / INDIA
+            ---------------------------------------------
+            */
+
             if (
-                current.includes('GOVERNMENT') ||
-                current.includes('GOVT') ||
+                current.includes(
+                    'GOVERNMENT'
+                )
+                ||
+                current.includes(
+                    'GOVT'
+                )
+                ||
                 current === 'INDIA'
             ) {
 
                 for (
                     let j = i + 1;
                     j < Math.min(
-                        i + 5,
+                        i + 7,
                         lines.length
                     );
                     j++
@@ -1479,11 +1712,17 @@ async function startVerification() {
                         !/[0-9]/.test(candidate) &&
                         !candidateUpper.includes('AADHAAR') &&
                         !candidateUpper.includes('AADHAR') &&
+                        !candidateUpper.includes('GOVERNMENT') &&
+                        !candidateUpper.includes('GOVT') &&
+                        !candidateUpper.includes('INDIA') &&
                         !candidateUpper.includes('DOB') &&
                         !candidateUpper.includes('DATE OF BIRTH') &&
                         !candidateUpper.includes('YEAR OF BIRTH') &&
                         !candidateUpper.includes('MALE') &&
-                        !candidateUpper.includes('FEMALE')
+                        !candidateUpper.includes('FEMALE') &&
+                        !candidateUpper.includes('ADDRESS') &&
+                        !candidateUpper.includes('AUTHORITY') &&
+                        !candidateUpper.includes('IDENTIFICATION')
                     ) {
 
                         possibleName =
@@ -1497,6 +1736,58 @@ async function startVerification() {
                 if (
                     possibleName !== ''
                 ) {
+
+                    break;
+                }
+            }
+        }
+
+
+        /*
+        =================================================
+        FALLBACK NAME SEARCH
+        =================================================
+        */
+
+        if (
+            possibleName === ''
+        ) {
+
+            for (
+                let i = 0;
+                i < lines.length;
+                i++
+            ) {
+
+                const candidate =
+                    lines[i].trim();
+
+
+                const candidateUpper =
+                    candidate.toUpperCase();
+
+
+                if (
+                    candidate.length >= 3 &&
+                    candidate.length <= 60 &&
+                    !/[0-9]/.test(candidate) &&
+                    !candidateUpper.includes('GOVERNMENT') &&
+                    !candidateUpper.includes('GOVT') &&
+                    !candidateUpper.includes('INDIA') &&
+                    !candidateUpper.includes('AADHAAR') &&
+                    !candidateUpper.includes('AADHAR') &&
+                    !candidateUpper.includes('DOB') &&
+                    !candidateUpper.includes('DATE OF BIRTH') &&
+                    !candidateUpper.includes('YEAR OF BIRTH') &&
+                    !candidateUpper.includes('MALE') &&
+                    !candidateUpper.includes('FEMALE') &&
+                    !candidateUpper.includes('ADDRESS') &&
+                    !candidateUpper.includes('AUTHORITY') &&
+                    !candidateUpper.includes('IDENTIFICATION')
+                ) {
+
+                    possibleName =
+                        candidate;
 
                     break;
                 }
@@ -1536,6 +1827,7 @@ async function startVerification() {
 
 
     } catch (error) {
+
 
         console.error(
             'OCR Error:',
