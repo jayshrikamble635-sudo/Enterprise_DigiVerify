@@ -1566,6 +1566,27 @@ body {
 
 
                 <div class="analysis-list">
+                    <div class="analysis-item">
+
+    <div class="analysis-icon">
+        <?= $aiResult === 'REAL-LIKE' ? '✓' : '!' ?>
+    </div>
+
+    <div>
+
+        <strong>
+            AI Image Screening:
+        </strong>
+
+        <?= e($aiResult) ?>
+
+        <br>
+
+        <?= e($aiReason) ?>
+
+    </div>
+
+</div>
 
 
                     <?php foreach ($warnings as $warning): ?>
