@@ -9,7 +9,7 @@ $DB_HOST = getenv('DB_HOST') ?: '127.0.0.1';
 $DB_PORT = (int)(getenv('DB_PORT') ?: 3306);
 $DB_NAME = getenv('DB_NAME') ?: 'digiverify';
 $DB_USER = getenv('DB_USER') ?: 'root';
-$DB_PASS = getenv('DB_PASSWORD') ?: '84GsW8L3mHRKuB9lY.YU9.h';
+$DB_PASS = getenv('DB_PASSWORD') ?: '';
 
 $conn = mysqli_init();
 
@@ -18,25 +18,12 @@ if (!$conn) {
     die('ERROR: Database initialization failed.');
 }
 
-/*
- * MariaDB Cloud SSL/TLS
- */
 $sslCA = getenv('DB_SSL_CA') ?: '/etc/secrets/globalsignrootca.pem';
 
 if (is_file($sslCA)) {
-    mysqli_ssl_set(
-        $conn,
-        null,
-        null,
-        $sslCA,
-        null,
-        null
-    );
+    mysqli_ssl_set($conn, null, null, $sslCA, null, null);
 }
 
-/*
- * Database connection
- */
 $connected = false;
 
 if (is_file($sslCA)) {
@@ -64,9 +51,9 @@ if (is_file($sslCA)) {
 if (!$connected) {
     error_log(
         'DigiVerify Database Error: ' .
+        mysqli_connect_errno() . ' - ' .
         mysqli_connect_error()
     );
-
     die('ERROR: Database connection failed.');
 }
 
