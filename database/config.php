@@ -54,7 +54,12 @@ if (!$connected) {
         mysqli_connect_errno() . ' - ' .
         mysqli_connect_error()
     );
-    die('ERROR: Database connection failed.');
+   die(
+    'DB ERROR: ' .
+    mysqli_connect_errno() .
+    ' - ' .
+    mysqli_connect_error()
+);
 }
 
 mysqli_set_charset($conn, 'utf8mb4');
