@@ -14,52 +14,69 @@ $DB_PASS = getenv('DB_PASSWORD') ?: '';
 $conn = mysqli_init();
 
 if (!$conn) {
-    error_log('DigiVerify: mysqli_init() failed.');
     die('ERROR: Database initialization failed.');
 }
 
+/*
+=========================================================
+MARIA DB CLOUD SSL
+=========================================================
+*/
+
 $sslCA = getenv('DB_SSL_CA') ?: '/etc/secrets/globalsignrootca.pem';
 
-if (is_file($sslCA)) {
-    mysqli_ssl_set($conn, null, null, $sslCA, null, null);
-}
-
-$connected = false;
-
-if (is_file($sslCA)) {
-    $connected = mysqli_real_connect(
-        $conn,
-        $DB_HOST,
-        $DB_USER,
-        $DB_PASS,
-        $DB_NAME,
-        $DB_PORT,
-        null,
-        MYSQLI_CLIENT_SSL
-    );
-} else {
-    $connected = mysqli_real_connect(
-        $conn,
-        $DB_HOST,
-        $DB_USER,
-        $DB_PASS,
-        $DB_NAME,
-        $DB_PORT
+if (!is_file($sslCA)) {
+    die(
+        'DB ERROR: SSL certificate not found at: ' .
+        $sslCA
     );
 }
+
+/*
+=========================================================
+CONFIGURE SSL
+=========================================================
+*/
+
+$sslConfigured = mysqli_ssl_set(
+    $conn,
+    null,
+    null,
+    $sslCA,
+    null,
+    null
+);
+
+if (!$sslConfigured) {
+    die('DB ERROR: Could not configure SSL certificate.');
+}
+
+/*
+=========================================================
+CONNECT TO MARIA DB CLOUD
+=========================================================
+*/
+
+$connected = mysqli_real_connect(
+    $conn,
+    $DB_HOST,
+    $DB_USER,
+    $DB_PASS,
+    $DB_NAME,
+    $DB_PORT,
+    null,
+    MYSQLI_CLIENT_SSL
+);
 
 if (!$connected) {
-    error_log(
-        'DigiVerify Database Error: ' .
-        mysqli_connect_errno() . ' - ' .
+
+    die(
+        'DB ERROR: ' .
+        mysqli_connect_errno() .
+        ' - ' .
         mysqli_connect_error()
     );
-   die(
-    'DB ERROR: ' .
-    mysqli_connect_errno() .
-    ' - ' .
-    mysqli_connect_error()
-);
+
 }
 
 mysqli_set_charset($conn, 'utf8mb4');
