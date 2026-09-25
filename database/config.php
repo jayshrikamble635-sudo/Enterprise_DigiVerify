@@ -5,10 +5,10 @@ ini_set('display_errors', '0');
 
 mysqli_report(MYSQLI_REPORT_OFF);
 
-$DB_HOST = getenv('DB_HOST') ?: '127.0.0.1';
-$DB_PORT = (int)(getenv('DB_PORT') ?: 3306);
+$DB_HOST = getenv('DB_HOST') ?: '';
+$DB_PORT = (int)(getenv('DB_PORT') ?: 4066);
 $DB_NAME = getenv('DB_NAME') ?: 'digiverify';
-$DB_USER = getenv('DB_USER') ?: 'root';
+$DB_USER = getenv('DB_USER') ?: '';
 $DB_PASS = getenv('DB_PASSWORD') ?: '';
 
 $conn = mysqli_init();
@@ -18,45 +18,10 @@ if (!$conn) {
 }
 
 /*
-=========================================================
-MARIA DB CLOUD SSL
-=========================================================
-*/
-
-$sslCA = getenv('DB_SSL_CA') ?: '/etc/secrets/globalsignrootca.pem';
-
-if (!is_file($sslCA)) {
-    die(
-        'DB ERROR: SSL certificate not found at: ' .
-        $sslCA
-    );
-}
-
-/*
-=========================================================
-CONFIGURE SSL
-=========================================================
-*/
-
-$sslConfigured = mysqli_ssl_set(
-    $conn,
-    null,
-    null,
-    $sslCA,
-    null,
-    null
-);
-
-if (!$sslConfigured) {
-    die('DB ERROR: Could not configure SSL certificate.');
-}
-
-/*
-=========================================================
-CONNECT TO MARIA DB CLOUD
-=========================================================
-*/
-
+ * MariaDB Cloud SSL connection
+ * Temporary diagnostic mode:
+ * encrypted SSL connection, without certificate verification.
+ */
 $connected = mysqli_real_connect(
     $conn,
     $DB_HOST,
@@ -65,18 +30,16 @@ $connected = mysqli_real_connect(
     $DB_NAME,
     $DB_PORT,
     null,
-    MYSQLI_CLIENT_SSL
+    MYSQLI_CLIENT_SSL_DONT_VERIFY_SERVER_CERT
 );
 
 if (!$connected) {
-
     die(
         'DB ERROR: ' .
         mysqli_connect_errno() .
         ' - ' .
         mysqli_connect_error()
     );
-
 }
 
 mysqli_set_charset($conn, 'utf8mb4');
